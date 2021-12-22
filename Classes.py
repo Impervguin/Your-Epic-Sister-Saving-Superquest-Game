@@ -39,7 +39,7 @@ class BaseCharacter:
     def Calculate_characteristics(self):  # считает характеристики относительно уровня, special и предметов
         self.Stats = dict()
         # Вычисление стартовых характеристик
-        self.Stats["HP"] = self.Base_Stats["HP"] + self.Base_Stats["HP"] * (self.Strength / 20) + self.Base_Stats[
+        self.Stats["Max_HP"] = self.Base_Stats["HP"] + self.Base_Stats["HP"] * (self.Strength / 20) + self.Base_Stats[
             "HP"] * (self.Endurance / 10)
         self.Stats["Phys_Atk"] = self.Base_Stats["Phys_Atk"] + self.Base_Stats["Phys_Atk"] * (self.Strength / 10) + \
                                  self.Base_Stats["Phys_Atk"] * (self.Agility / 10)
@@ -56,6 +56,8 @@ class BaseCharacter:
             self.Stats[stat] *= int(1 + self.Level / 25)
             self.Stats[stat] += self.armor.Stat_Boosts[stat]
             self.Stats[stat] += self.weapon.Stat_Boosts[stat]
+
+        self.Stats["HP"] = self.Stats["Max_HP"]
 
     def Equip_armor(self, armor):
         if armor is None:
@@ -75,8 +77,35 @@ class BaseCharacter:
             self.Level += 1
             self.Calculate_characteristics()
 
-    def Attack(self, target):
-        pass
+    def Attack(self, target) -> int:
+        types = {"Phys": (1, 0),
+                 "Mag": (0, 1),
+                 "Hybrid": (0.6, 0.6)
+                 }
+        phys_damage_modifier, mag_damage_modifier = types[self.Attack_type]
+
+        phys_damage = phys_damage_modifier * self.Stats["Phys_Atk"]
+        mag_damage = mag_damage_modifier * self.Stats["Mag_Atk"]
+
+        r = random.randint(0, 100)
+        if r <= self.Stats["Crit_Chance"]:
+            phys_damage *= self.Stats["Crit_Modifier"] / 100
+            mag_damage *= self.Stats["Crit_Modifier"] / 100
+
+        phys_damage -= target.Stats["Phys_Def"]
+        mag_damage -= target.Stats["Mag_Def"]
+
+        mag_damage = max(0, mag_damage)
+        phys_damage = max(0, phys_damage)
+
+        total_damage = int(mag_damage + phys_damage)
+
+        target.Stats["HP"] -= total_damage
+        return total_damage
+
+
+
+
 
 
 class EquipItem:
@@ -101,3 +130,13 @@ class Weapon(EquipItem):
     def __init__(self):
         super(Weapon, self).__init__()
         self.Item_Class = "Weapon"
+
+# class FightMember:
+#     def __init__(self, character):
+#         self.character = character
+#         self.defeated = False
+#
+# class Fight:
+#     def __init__(self, command1, command2):
+
+
