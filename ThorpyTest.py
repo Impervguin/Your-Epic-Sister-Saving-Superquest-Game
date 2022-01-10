@@ -14,9 +14,9 @@ LevelBox.set_size((1000, 1024))
 LevelBox.set_title(thorpy.Title("Уровни"))
 for i in range(len(Levels)):
     if i % 2 == 0:
-        Levels[i].set_topleft((100, 160 + 160 * (i // 2)))
+        Levels[i].set_topleft((600, -114 + 160 * (i // 2)))
     else:
-        Levels[i]. set_topleft((1000, 160 + 160 * (i // 2)))
+        Levels[i].set_topleft((1000, -114 + 160 * (i // 2)))
 Characters = [thorpy.make_button(f"Персонаж {i + 1}") for i in range(10)]
 
 CharacterBox = thorpy.Box(elements=Characters)
