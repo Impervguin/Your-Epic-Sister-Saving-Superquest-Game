@@ -18,8 +18,6 @@ class BaseCharacter:
         self.Agility = characteristics["Agility"]
         self.Luck = characteristics["Luck"]
 
-        self.Level = characteristics["Level"]
-        self.XP = characteristics["XP"]
         self.Attack_type = characteristics["Attack_type"]
 
         self.Spec_Attack_Modifiers = characteristics["Phys_Spec_Attack_Modifier"], characteristics[
