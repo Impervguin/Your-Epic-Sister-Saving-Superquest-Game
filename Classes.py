@@ -87,7 +87,7 @@ class BaseCharacter:
         phys_damage = phys_damage_modifier * self.Stats["Phys_Atk"]
         mag_damage = mag_damage_modifier * self.Stats["Mag_Atk"]
 
-        r = random.randint(0, 100)
+        r = random.randint(0, 101)
         if r <= self.Stats["Crit_Chance"]:
             phys_damage *= self.Stats["Crit_Modifier"] / 100
             mag_damage *= self.Stats["Crit_Modifier"] / 100
