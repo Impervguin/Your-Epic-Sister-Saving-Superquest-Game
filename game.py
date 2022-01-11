@@ -1,14 +1,16 @@
 import thorpy
 import Classes
-
+import pygame
 
 class Game:
     def __init__(self):
-        self.application = thorpy.Application((1440, 1024), "YESSS")
+        self.window_size = (1440, 1024)
+        self.application = thorpy.Application(self.window_size, "YESSS")
         self.elements = []
         self.background = thorpy.Background(elements=self.elements)
         self.menu = thorpy.Menu(self.background)
         self.params = {'lvl':None, 'chr':None}
+        self.start_menu_window()
 
     def init_window(self):
         self.background = thorpy.Background(elements=self.elements)
@@ -24,6 +26,49 @@ class Game:
     def start_window(self):
         self.menu.play()
 
+    def start_menu_window(self):
+        def new_game_button_handler():
+            self.clear_window()
+            self.disclaimer_window()
+            # self.level_selector()
+
+        def load_game_button_handler():
+            self.clear_window()
+            pass
+
+        new_game_button = thorpy.make_button("Начать новую игра", func=new_game_button_handler)
+        new_game_button.set_size((425, 125))
+        new_game_button.set_topleft((507, 260))
+
+        load_game_button = thorpy.make_button("Загрузить игру", func=load_game_button_handler)
+        load_game_button.set_size((425, 125))
+        load_game_button.set_topleft((507, 559))
+
+        self.elements = [new_game_button, load_game_button]
+        self.init_window()
+        self.start_window()
+
+
+
+    def disclaimer_window(self):
+        def press():
+            self.clear_window()
+            self.level_selector()
+
+        disclaimer_image_path = "disclaimer.png"
+        disclaimer = thorpy.make_button("", func=press)
+        disclaimer.set_size(self.window_size)
+        disclaimer.set_topleft((0, 0))
+        disclaimer.remove_all_hovered_states()
+        disclaimer.set_image(img=pygame.image.load(disclaimer_image_path), state=thorpy.constants.STATE_NORMAL)
+
+
+
+        self.elements = [disclaimer]
+        self.init_window()
+        self.start_window()
+
+
     def character_view(self, id):
         self.start_window()
 
@@ -35,6 +80,7 @@ class Game:
             self.params['lvl'] = n
             self.clear_window()
             self.character_selector()
+
 
         def chr_button_parser(n):
             self.clear_window()
@@ -75,10 +121,10 @@ class Game:
                 Characters[i].set_topleft((245, 160 + 160 * (i // 2)))
 
         Characters_Box.set_topleft((1000, 0))
-        self.clear_window()
+
         self.elements = [Characters_Box, Levels_Box]
         self.init_window()
         self.start_window()
 
 a = Game()
-a.level_selector()
+# a.level_selector()
