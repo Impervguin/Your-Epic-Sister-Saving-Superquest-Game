@@ -2,7 +2,7 @@ import thorpy
 
 application = thorpy.Application((1440, 1024), "Выбор уровня")
 
-Levels = [thorpy.make_button(f"Уровень {i + 1}") for i in range(10)]
+Levels = [thorpy.make_button(f"Уровень {i + 1}", func=thorpy.functions.quit_menu_func) for i in range(10)]
 Levels_Box = thorpy.Box(elements=Levels)
 for level in Levels:
     level.set_size((350, 120))
