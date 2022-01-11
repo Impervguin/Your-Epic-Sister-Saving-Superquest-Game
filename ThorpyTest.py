@@ -1,6 +1,6 @@
 import thorpy
 
-application = thorpy.Application((1440, 1024), "ThorPy Overview")
+application = thorpy.Application((1440, 1024), "Выбор уровня")
 
 Levels = [thorpy.make_button(f"Уровень {i + 1}") for i in range(10)]
 Levels_Box = thorpy.Box(elements=Levels)
