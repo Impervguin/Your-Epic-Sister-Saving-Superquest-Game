@@ -4,4 +4,4 @@ import Classes
 
 
 class Game:
-    
+    def __init__(self):
