@@ -2,6 +2,7 @@ import thorpy
 import Classes
 import pygame
 
+
 class Game:
     def __init__(self):
         self.window_size = (1440, 1024)
@@ -9,7 +10,7 @@ class Game:
         self.elements = []
         self.background = thorpy.Background(elements=self.elements)
         self.menu = thorpy.Menu(self.background)
-        self.params = {'lvl':None, 'chr':None}
+        self.params = {'lvl': None, 'chr': None}
         self.start_menu_window()
 
     def init_window(self):
@@ -34,9 +35,8 @@ class Game:
 
         def load_game_button_handler():
             self.clear_window()
-            pass
 
-        new_game_button = thorpy.make_button("Начать новую игра", func=new_game_button_handler)
+        new_game_button = thorpy.make_button("Начать новую игру", func=new_game_button_handler)
         new_game_button.set_size((425, 125))
         new_game_button.set_topleft((507, 260))
 
@@ -47,8 +47,6 @@ class Game:
         self.elements = [new_game_button, load_game_button]
         self.init_window()
         self.start_window()
-
-
 
     def disclaimer_window(self):
         def press():
@@ -62,12 +60,9 @@ class Game:
         disclaimer.remove_all_hovered_states()
         disclaimer.set_image(img=pygame.image.load(disclaimer_image_path), state=thorpy.constants.STATE_NORMAL)
 
-
-
         self.elements = [disclaimer]
         self.init_window()
         self.start_window()
-
 
     def character_view(self, id):
         self.start_window()
@@ -81,12 +76,12 @@ class Game:
             self.clear_window()
             self.character_selector()
 
-
         def chr_button_parser(n):
             self.clear_window()
             self.character_view(n)
 
-        Levels = [thorpy.make_button(f"Уровень {i + 1}", func=lvl_button_parser, params={"n":i+1}) for i in range(10)]
+        Levels = [thorpy.make_button(f"Уровень {i + 1}", func=lvl_button_parser, params={"n": i + 1}) for i in
+                  range(10)]
         Levels_Box = thorpy.Box(elements=Levels)
         for level in Levels:
             level.set_size((350, 120))
@@ -104,7 +99,8 @@ class Game:
 
         Levels_Box.set_topleft((0, 0))
 
-        Characters = [thorpy.make_button(f"Персонаж {i + 1}", func=chr_button_parser, params={"n":i+1}) for i in range(4)]
+        Characters = [thorpy.make_button(f"Персонаж {i + 1}", func=chr_button_parser, params={"n": i + 1}) for i in
+                      range(4)]
         Characters_Box = thorpy.Box(elements=Characters)
         for character in Characters:
             character.set_size((120, 120))
@@ -126,5 +122,5 @@ class Game:
         self.init_window()
         self.start_window()
 
+
 a = Game()
-# a.level_selector()
