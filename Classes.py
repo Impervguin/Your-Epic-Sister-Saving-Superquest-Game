@@ -4,150 +4,155 @@ XP_TABLE = {1: 500, 2: 1000}  # Таблица требуемоего опыта
 
 
 class BaseCharacter:
-    def __init__(self, Characteristics):
-        self.ID = Characteristics["ID"]
-        self.Name = Characteristics["Name"]
-        self.Character_init(Characteristics)
+    def __init__(self, characteristics):
+        print(characteristics)
+        self.id = characteristics["id"]
+        self.name = characteristics["name"]
+        self.available = characteristics["available"]
+        self.character_init(characteristics)
 
-    def Character_init(self, characteristics):
-        self.Strength = characteristics["Strength"]
-        self.Perception = characteristics["Perception"]
-        self.Endurance = characteristics["Endurance"]
-        self.Charisma = characteristics["Charisma"]
-        self.Intelligence = characteristics["Intelligence"]
-        self.Agility = characteristics["Agility"]
-        self.Luck = characteristics["Luck"]
+    def character_init(self, characteristics):
+        self.strength = characteristics["strength"]
+        self.perception = characteristics["perception"]
+        self.endurance = characteristics["endurance"]
+        self.charisma = characteristics["charisma"]
+        self.intelligence = characteristics["intelligence"]
+        self.agility = characteristics["agility"]
+        self.luck = characteristics["luck"]
 
-        self.Attack_type = characteristics["Attack_type"]
+        self.level = characteristics["lvl"]
+        self.xp = characteristics["xp"]
 
-        self.Spec_Attack_Modifiers = characteristics["Phys_Spec_Attack_Modifier"], characteristics[
-            "Mag_Spec_Attack_Modifier"]
-        self.Spec_Attack_Recovery = characteristics["Spec_Attack_Recovery"]
+        self.attack_type = characteristics["attack_type"]
 
-        self.Base_Stats = dict()
-        self.Base_Stats["HP"] = 3600
-        self.Base_Stats["PHYS_Atk"] = 100
-        self.Base_Stats["MAG_Atk"] = 100
-        self.Base_Stats["PHYS_Def"] = 100
-        self.Base_Stats["MAG_Def"] = 100
-        self.Base_Stats["Crit_Chance"] = 10
-        self.Base_Stats["Crit_Modifier"] = 150
-        self.Base_Stats["Accuracy"] = 10
-        self.Base_Stats["Dodge"] = 10
+        self.spec_attack_modifiers = characteristics["phys_spec_attack_modifier"], characteristics[
+            "mag_spec_attack_modifier"]
+        self.spec_attack_recovery = characteristics["spec_attack_recovery"]
 
-        self.Equip_armor(None)
-        self.Equip_weapon(None)
+        self.Base_stats = dict()
+        self.Base_stats["hp"] = 3600
+        self.Base_stats["phys_atk"] = 100
+        self.Base_stats["mag_atk"] = 100
+        self.Base_stats["phys_def"] = 100
+        self.Base_stats["mag_def"] = 100
+        self.Base_stats["crit_chance"] = 10
+        self.Base_stats["crit_modifier"] = 150
+        self.Base_stats["accuracy"] = 10
+        self.Base_stats["dodge"] = 10
+        if characteristics["weapon_id"] == 0:
+            self.equip_weapon(None)
+        if characteristics["armor_id"] == 0:
+            self.equip_armor(None)
 
-    def Calculate_characteristics(self):  # считает характеристики относительно уровня, special и предметов
-        self.Stats = dict()
+    def calculate_characteristics(self):  # считает характеристики относительно уровня, special и предметов
+        self.stats = dict()
         # Вычисление стартовых характеристик
-        self.Stats["Max_HP"] = self.Base_Stats["HP"] + self.Base_Stats["HP"] * (self.Strength / 20) + self.Base_Stats[
-            "HP"] * (self.Endurance / 10)
-        self.Stats["Phys_Atk"] = self.Base_Stats["Phys_Atk"] + self.Base_Stats["Phys_Atk"] * (self.Strength / 10) + \
-                                 self.Base_Stats["Phys_Atk"] * (self.Agility / 10)
-        self.Stats["Mag_Atk"] = self.Base_Stats["Mag_Atk"] + self.Base_Stats["Mag_Atk"] * (self.Intelligence / 10) + \
-                                self.Base_Stats["Mag_Atk"] * (self.Perception / 10)
-        self.Stats["Phys_Def"] = self.Base_Stats["Phys_Def"] + self.Base_Stats["Phys_Def"] * (self.Endurance / 10)
-        self.Stats["Mag_Def"] = self.Base_Stats["Mag_Def"] + self.Base_Stats["Mag_Def"] * (self.Intelligence / 10)
-        self.Stats["Crit_Chance"] = self.Base_Stats["Crit_Chance"] + self.Agility * 1.5 + self.Luck * 2
-        self.Stats["Crit_Modifier"] = self.Base_Stats["Crit_Modifier"] + self.Agility * 5 + self.Luck * 5
-        self.Stats["Accuracy"] = self.Base_Stats["Accuracy"] + self.Perception * 2 + self.Luck * 2
-        self.Stats["Dodge"] = self.Base_Stats["Dodge"] + self.Agility * 2 + self.Luck * 2
+        self.stats["max_hp"] = self.Base_stats["hp"] + self.Base_stats["hp"] * (self.strength / 20) + self.Base_stats[
+            "hp"] * (self.endurance / 10)
+        self.stats["phys_atk"] = self.Base_stats["phys_atk"] + self.Base_stats["phys_atk"] * (self.strength / 10) + \
+                                 self.Base_stats["phys_atk"] * (self.agility / 10)
+        self.stats["mag_atk"] = self.Base_stats["mag_atk"] + self.Base_stats["mag_atk"] * (self.intelligence / 10) + \
+                                self.Base_stats["mag_atk"] * (self.perception / 10)
+        self.stats["phys_def"] = self.Base_stats["phys_def"] + self.Base_stats["phys_def"] * (self.endurance / 10)
+        self.stats["mag_def"] = self.Base_stats["mag_def"] + self.Base_stats["mag_def"] * (self.intelligence / 10)
+        self.stats["crit_chance"] = self.Base_stats["crit_chance"] + self.agility * 1.5 + self.luck * 2
+        self.stats["crit_modifier"] = self.Base_stats["crit_modifier"] + self.agility * 5 + self.luck * 5
+        self.stats["accuracy"] = self.Base_stats["accuracy"] + self.perception * 2 + self.luck * 2
+        self.stats["dodge"] = self.Base_stats["dodge"] + self.agility * 2 + self.luck * 2
         # Подгоняет статы по уровню и добавляет бонусные от брони и оружия 
-        for stat in self.Stats.keys():
-            self.Stats[stat] *= int(1 + self.Level / 25)
-            self.Stats[stat] += self.armor.Stat_Boosts[stat]
-            self.Stats[stat] += self.weapon.Stat_Boosts[stat]
+        for stat in self.stats.keys():
+            self.stats[stat] *= int(1 + self.level / 25)
+            self.stats[stat] += self.armor.Stat_Boosts[stat]
+            self.stats[stat] += self.weapon.Stat_Boosts[stat]
 
-    def Equip_armor(self, armor):
-        if armor is None:
-            armor = Armor()
+    def equip_armor(self, armor):
+
         self.armor = armor
-        self.Calculate_characteristics()
+        if armor is not None:
+            self.calculate_characteristics()
 
-    def Equip_weapon(self, weapon):
-        if weapon is None:
-            weapon = Weapon()
+    def equip_weapon(self, weapon):
         self.weapon = weapon
-        self.Calculate_characteristics()
+        if weapon is not None:
+            self.calculate_characteristics()
 
-    def Level_up(self):
-        if self.XP >= XP_TABLE[self.Level]:
-            self.XP -= XP_TABLE[self.Level]
-            self.Level += 1
-            self.Calculate_characteristics()
+    def level_up(self):
+        if self.xp >= XP_TABLE[self.level]:
+            self.xp -= XP_TABLE[self.level]
+            self.level += 1
+            self.calculate_characteristics()
 
-    def Attack(self, target) -> int:
-        types = {"Phys": (1, 0),
-                 "Mag": (0, 1),
-                 "Hybrid": (0.6, 0.6)
+    def attack(self, target) -> int:
+        types = {"phys": (1, 0),
+                 "mag": (0, 1),
+                 "hybrid": (0.6, 0.6)
                  }
-        phys_damage_modifier, mag_damage_modifier = types[self.Attack_type]
+        phys_damage_modifier, mag_damage_modifier = types[self.attack_type]
 
-        phys_damage = phys_damage_modifier * self.Stats["Phys_Atk"]
-        mag_damage = mag_damage_modifier * self.Stats["Mag_Atk"]
+        phys_damage = phys_damage_modifier * self.stats["phys_atk"]
+        mag_damage = mag_damage_modifier * self.stats["mag_atk"]
 
         r = random.randint(0, 101)
-        if r <= self.Stats["Crit_Chance"]:
-            phys_damage *= self.Stats["Crit_Modifier"] / 100
-            mag_damage *= self.Stats["Crit_Modifier"] / 100
+        if r <= self.stats["crit_chance"]:
+            phys_damage *= self.stats["crit_modifier"] / 100
+            mag_damage *= self.stats["crit_modifier"] / 100
 
-        phys_damage -= target.Stats["Phys_Def"]
-        mag_damage -= target.Stats["Mag_Def"]
+        phys_damage -= target.stats["phys_def"]
+        mag_damage -= target.stats["mag_def"]
 
         mag_damage = max(0, mag_damage)
         phys_damage = max(0, phys_damage)
 
         total_damage = int(mag_damage + phys_damage)
 
-        target.Stats["HP"] -= total_damage
+        target.stats["hp"] -= total_damage
         return total_damage
 
-    def SpecAttack(self, target):
-        phys_damage_modifier, mag_damage_modifier = self.Spec_Attack_Modifiers
+    def specattack(self, target):
+        phys_damage_modifier, mag_damage_modifier = self.spec_attack_modifiers
 
-        phys_damage = phys_damage_modifier * self.Stats["Phys_Atk"]
-        mag_damage = mag_damage_modifier * self.Stats["Mag_Atk"]
+        phys_damage = phys_damage_modifier * self.stats["phys_atk"]
+        mag_damage = mag_damage_modifier * self.stats["mag_atk"]
 
         r = random.randint(0, 100)
-        if r <= self.Stats["Crit_Chance"]:
-            phys_damage *= self.Stats["Crit_Modifier"] / 100
-            mag_damage *= self.Stats["Crit_Modifier"] / 100
+        if r <= self.stats["crit_chance"]:
+            phys_damage *= self.stats["crit_modifier"] / 100
+            mag_damage *= self.stats["crit_modifier"] / 100
 
-        phys_damage -= target.Stats["Phys_Def"]
-        mag_damage -= target.Stats["Mag_Def"]
+        phys_damage -= target.stats["phys_def"]
+        mag_damage -= target.stats["mag_def"]
 
         mag_damage = max(0, mag_damage)
         phys_damage = max(0, phys_damage)
 
         total_damage = int(mag_damage + phys_damage)
 
-        target.Stats["HP"] -= total_damage
+        target.stats["hp"] -= total_damage
         return total_damage
 
 
 class EquipItem:
-    def __init__(self, Stats):
-        self.ID = Stats["ID"]
-        self.Name = Stats["Name"]
-        self.Stats_init(Stats)
+    def __init__(self, stats):
+        self.id = stats["id"]
+        self.name = stats["name"]
+        self.stats_init(stats)
 
-    def Stats_init(self, Stats):
-        self.Stat_Boosts = dict()
-        for stat in Stats.keys():
-            self.Stat_Boosts[stat] = Stats[stat]
+    def stats_init(self, stats):
+        self.stat_boosts = dict()
+        for stat in stats.keys():
+            self.stat_boosts[stat] = stats[stat]
 
 
 class Armor(EquipItem):
-    def __init__(self):
-        super(Armor, self).__init__()
-        self.Item_Class = "Armor"
+    def __init__(self, stats):
+        super(Armor, self).__init__(stats)
+        self.item_class = "Armor"
 
 
 class Weapon(EquipItem):
-    def __init__(self):
-        super(Weapon, self).__init__()
-        self.Item_Class = "Weapon"
+    def __init__(self, stats):
+        super(Weapon, self).__init__(stats)
+        self.item_class = "Weapon"
 
 
 class FightMember:
@@ -156,7 +161,7 @@ class FightMember:
         self.defeated = False
         self.made_move = False
         self.turns_before_spec_attack = 0
-        self.character.Stats["HP"] = self.character.Stats["Max_HP"]
+        self.character.stats["hp"] = self.character.stats["max_hp"]
 
 
 class Fight:
@@ -182,12 +187,12 @@ class Fight:
 
         if move_type == "specattack":
             if not actor.turns_before_spec_attack:
-                damage = actor.character.SpecAttack(object.character)
-                actor.turns_before_spec_attack = actor.character.Spec_Attack_Recovery
+                damage = actor.character.specattack(object.character)
+                actor.turns_before_spec_attack = actor.character.spec_attack_recovery
 
         elif move_type == "attack":
-            damage = actor.character.Attack(object.character)
-        if object.character.Stats["HP"] <= 0:
+            damage = actor.character.attack(object.character)
+        if object.character.stats["hp"] <= 0:
             object.defeated = True
         actor.made_move = True
         if self.check_win():

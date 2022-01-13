@@ -1,6 +1,7 @@
 import thorpy
 import Classes
 import pygame
+import sqlite3
 
 
 class Game:
@@ -8,6 +9,7 @@ class Game:
         self.window_size = (1440, 1024)
         self.application = thorpy.Application(self.window_size, "YESSS")
         self.elements = []
+        self.save_opened = False
         self.background = thorpy.Background(elements=self.elements)
         self.menu = thorpy.Menu(self.background)
         self.params = {'lvl': None, 'chr': None}
@@ -30,11 +32,13 @@ class Game:
     def start_menu_window(self):
         def new_game_button_handler():
             self.clear_window()
+            self.new_game()
             self.disclaimer_window()
-            # self.level_selector()
 
         def load_game_button_handler():
             self.clear_window()
+            self.load_save()
+            self.disclaimer_window()
 
         new_game_button = thorpy.make_button("Начать новую игру", func=new_game_button_handler)
         new_game_button.set_size((425, 125))
@@ -48,12 +52,55 @@ class Game:
         self.init_window()
         self.start_window()
 
+    def open_save(self):
+        save_path = "saves/save.db"
+        self.save = sqlite3.connect(save_path)
+        self.cur = self.save.cursor()
+        self.save_opened = True
+
+    def new_game(self):
+        self.open_save()
+        self.cur.execute("UPDATE Heroes SET lvl = '1'")
+        self.cur.execute("UPDATE Heroes SET xp = '0'")
+        self.cur.execute("UPDATE Heroes SET weapon_id = '0'")
+        self.cur.execute("UPDATE Heroes SET armor_id = '0'")
+        self.cur.execute("UPDATE Heroes SET available = '0'")
+        self.cur.execute("UPDATE Heroes SET available = '1' where id = '1'")
+
+        self.cur.execute("UPDATE Levels SET completed = '0'")
+
+        self.load_save()
+
+    def load_save(self):
+        if not self.save_opened:
+            self.open_save()
+        heroes = self.cur.execute("SELECT * FROM Heroes").fetchall()
+        characteristics = (
+        "id", "name", "lvl", "xp", "weapon_id", "armor_id", "strength", "perception", "endurance", "charisma",
+        "intelligence", "agility", "luck", "attack_type", "phys_spec_attack_modifier", "mag_spec_attack_modifier",
+        "spec_attack_recovery", "available")
+
+        self.heroes = dict()
+        for hero in heroes:
+            d = {}
+            for i in range(len(characteristics)):
+                d[characteristics[i]] = hero[i]
+            self.heroes[hero[0]] = Classes.BaseCharacter(d)
+        print(self.heroes)
+
+        self.levels = dict()
+        for level in self.cur.execute("SELECT * FROM Levels").fetchall():
+            self.levels[level[0]] = bool(level[1])
+
+
+        print(self.levels)
+
     def disclaimer_window(self):
         def press():
             self.clear_window()
             self.level_selector()
 
-        disclaimer_image_path = "disclaimer.png"
+        disclaimer_image_path = "sprites/disclaimers/disclaimer.png"
         disclaimer = thorpy.make_button("", func=press)
         disclaimer.set_size(self.window_size)
         disclaimer.set_topleft((0, 0))
@@ -81,10 +128,17 @@ class Game:
             self.character_view(n)
 
         Levels = [thorpy.make_button(f"Уровень {i + 1}", func=lvl_button_parser, params={"n": i + 1}) for i in
-                  range(10)]
+                  range(len(self.levels))]
         Levels_Box = thorpy.Box(elements=Levels)
-        for level in Levels:
-            level.set_size((350, 120))
+        first_not_completed = False
+        for i in range(len(Levels)):
+            Levels[i].set_size((350, 120))
+            if not self.levels[i + 1] and not first_not_completed:
+                Levels[i].set_active(True)
+                first_not_completed = True
+            else:
+                Levels[i].set_active(self.levels[i + 1])
+
         Levels_Box.set_size((1000, 1024))
 
         Levels_Title = thorpy.make_text("Уровни", 48)
@@ -99,11 +153,13 @@ class Game:
 
         Levels_Box.set_topleft((0, 0))
 
-        Characters = [thorpy.make_button(f"Персонаж {i + 1}", func=chr_button_parser, params={"n": i + 1}) for i in
-                      range(4)]
+        Characters = [thorpy.make_button(self.heroes[i + 1].name.capitalize(), func=chr_button_parser, params={"n": i + 1}) for i in
+                      range(len(self.heroes))]
         Characters_Box = thorpy.Box(elements=Characters)
-        for character in Characters:
-            character.set_size((120, 120))
+        for i in range(len(Characters)):
+            Characters[i].set_size((120, 120))
+            Characters[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
+            Characters[i].set_active(self.heroes[i + 1].available)
         Characters_Box.set_size((440, 1024))
 
         Characters_Title = thorpy.make_text("Персонажи", 48)
