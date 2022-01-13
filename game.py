@@ -112,7 +112,71 @@ class Game:
         self.start_window()
 
     def character_view(self, id):
+        hero = self.heroes[id]
+        d = {"mag": "Магическая", "phys": "Физическая", "hybrid":"Гибридная"}
+        im = thorpy.Image(f"sprites/{id}/char.png")
+        im.set_topleft((570, 120))
+        im.set_size((300, 600))
+        els_name = [
+            thorpy.OneLineText("Уровень"),
+            thorpy.OneLineText("Опыт"),
+            thorpy.OneLineText("Сила"),
+            thorpy.OneLineText("Восприятие"),
+            thorpy.OneLineText("Выносливость"),
+            thorpy.OneLineText("Харизма"),
+            thorpy.OneLineText("Интеллект"),
+            thorpy.OneLineText("Ловкость"),
+            thorpy.OneLineText("Удача"),
+
+            thorpy.OneLineText("Здоровье"),
+            thorpy.OneLineText("Физическая атака"),
+            thorpy.OneLineText("Магическая атака"),
+            thorpy.OneLineText("Физическая защита"),
+            thorpy.OneLineText("Магическая защита"),
+            thorpy.OneLineText("Тип атаки"),
+            thorpy.OneLineText("Шанс крита"),
+            thorpy.OneLineText("Множитель крита"),
+            thorpy.OneLineText("Точность"),
+            thorpy.OneLineText("Уворот")
+        ]
+
+        for el in els_name:
+            el.set_font_size(30)
+        els_value = [
+            thorpy.OneLineText(str(hero.lvl)),
+            thorpy.OneLineText(str(hero.xp)),
+            thorpy.OneLineText(str(hero.strength)),
+            thorpy.OneLineText(str(hero.perception)),
+            thorpy.OneLineText(str(hero.endurance)),
+            thorpy.OneLineText(str(hero.charisma)),
+            thorpy.OneLineText(str(hero.intelligence)),
+            thorpy.OneLineText(str(hero.agility)),
+            thorpy.OneLineText(str(hero.luck)),
+            thorpy.OneLineText(str(hero.stats["max_hp"])),
+            thorpy.OneLineText(str(hero.stats["phys_atk"])),
+            thorpy.OneLineText(str(hero.stats["mag_atk"])),
+            thorpy.OneLineText(str(hero.stats["phys_def"])),
+            thorpy.OneLineText(str(hero.stats["mag_def"])),
+            thorpy.OneLineText(d[hero.attack_type]),
+            thorpy.OneLineText(str(hero.stats["crit_chance"]) + "%"),
+            thorpy.OneLineText(str(hero.stats["crit_modifier"]) + "%"),
+            thorpy.OneLineText(str(hero.stats["accuracy"]) + "%"),
+            thorpy.OneLineText(str(hero.stats["dodge"]) + "%")
+        ]
+        for el in els_value:
+            el.set_font_size(30)
+        els = els_name + els_value
+        char_box = thorpy.Box(els)
+        char_box.set_topleft((50, 75))
+        char_box.set_size((420, 860))
+
+        char_name_store = thorpy.store(char_box, elements=els_name, align="left", x=60, y=85)
+        char_value_store = thorpy.store(char_box, elements=els_value, align="right", x=460, y=85)
+
+        self.elements = [im, char_box]
+        self.init_window()
         self.start_window()
+
 
     def character_selector(self):
         self.start_window()

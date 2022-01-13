@@ -5,7 +5,6 @@ XP_TABLE = {1: 500, 2: 1000}  # Таблица требуемоего опыта
 
 class BaseCharacter:
     def __init__(self, characteristics):
-        print(characteristics)
         self.id = characteristics["id"]
         self.name = characteristics["name"]
         self.available = characteristics["available"]
@@ -20,7 +19,7 @@ class BaseCharacter:
         self.agility = characteristics["agility"]
         self.luck = characteristics["luck"]
 
-        self.level = characteristics["lvl"]
+        self.lvl = characteristics["lvl"]
         self.xp = characteristics["xp"]
 
         self.attack_type = characteristics["attack_type"]
@@ -29,41 +28,44 @@ class BaseCharacter:
             "mag_spec_attack_modifier"]
         self.spec_attack_recovery = characteristics["spec_attack_recovery"]
 
-        self.Base_stats = dict()
-        self.Base_stats["hp"] = 3600
-        self.Base_stats["phys_atk"] = 100
-        self.Base_stats["mag_atk"] = 100
-        self.Base_stats["phys_def"] = 100
-        self.Base_stats["mag_def"] = 100
-        self.Base_stats["crit_chance"] = 10
-        self.Base_stats["crit_modifier"] = 150
-        self.Base_stats["accuracy"] = 10
-        self.Base_stats["dodge"] = 10
+        self.base_stats = dict()
+        self.base_stats["hp"] = 3600
+        self.base_stats["phys_atk"] = 100
+        self.base_stats["mag_atk"] = 100
+        self.base_stats["phys_def"] = 100
+        self.base_stats["mag_def"] = 100
+        self.base_stats["crit_chance"] = 10
+        self.base_stats["crit_modifier"] = 150
+        self.base_stats["accuracy"] = 10
+        self.base_stats["dodge"] = 10
         if characteristics["weapon_id"] == 0:
             self.equip_weapon(None)
         if characteristics["armor_id"] == 0:
             self.equip_armor(None)
+        self.calculate_characteristics()
 
     def calculate_characteristics(self):  # считает характеристики относительно уровня, special и предметов
         self.stats = dict()
         # Вычисление стартовых характеристик
-        self.stats["max_hp"] = self.Base_stats["hp"] + self.Base_stats["hp"] * (self.strength / 20) + self.Base_stats[
+        self.stats["max_hp"] = self.base_stats["hp"] + self.base_stats["hp"] * (self.strength / 20) + self.base_stats[
             "hp"] * (self.endurance / 10)
-        self.stats["phys_atk"] = self.Base_stats["phys_atk"] + self.Base_stats["phys_atk"] * (self.strength / 10) + \
-                                 self.Base_stats["phys_atk"] * (self.agility / 10)
-        self.stats["mag_atk"] = self.Base_stats["mag_atk"] + self.Base_stats["mag_atk"] * (self.intelligence / 10) + \
-                                self.Base_stats["mag_atk"] * (self.perception / 10)
-        self.stats["phys_def"] = self.Base_stats["phys_def"] + self.Base_stats["phys_def"] * (self.endurance / 10)
-        self.stats["mag_def"] = self.Base_stats["mag_def"] + self.Base_stats["mag_def"] * (self.intelligence / 10)
-        self.stats["crit_chance"] = self.Base_stats["crit_chance"] + self.agility * 1.5 + self.luck * 2
-        self.stats["crit_modifier"] = self.Base_stats["crit_modifier"] + self.agility * 5 + self.luck * 5
-        self.stats["accuracy"] = self.Base_stats["accuracy"] + self.perception * 2 + self.luck * 2
-        self.stats["dodge"] = self.Base_stats["dodge"] + self.agility * 2 + self.luck * 2
+        self.stats["phys_atk"] = self.base_stats["phys_atk"] + self.base_stats["phys_atk"] * (self.strength / 10) + \
+                                 self.base_stats["phys_atk"] * (self.agility / 10)
+        self.stats["mag_atk"] = self.base_stats["mag_atk"] + self.base_stats["mag_atk"] * (self.intelligence / 10) + \
+                                self.base_stats["mag_atk"] * (self.perception / 10)
+        self.stats["phys_def"] = self.base_stats["phys_def"] + self.base_stats["phys_def"] * (self.endurance / 10)
+        self.stats["mag_def"] = self.base_stats["mag_def"] + self.base_stats["mag_def"] * (self.intelligence / 10)
+        self.stats["crit_chance"] = self.base_stats["crit_chance"] + self.agility * 1.5 + self.luck * 2
+        self.stats["crit_modifier"] = self.base_stats["crit_modifier"] + self.agility * 5 + self.luck * 5
+        self.stats["accuracy"] = self.base_stats["accuracy"] + self.perception * 2 + self.luck * 2
+        self.stats["dodge"] = self.base_stats["dodge"] + self.agility * 2 + self.luck * 2
         # Подгоняет статы по уровню и добавляет бонусные от брони и оружия 
         for stat in self.stats.keys():
-            self.stats[stat] *= int(1 + self.level / 25)
-            self.stats[stat] += self.armor.Stat_Boosts[stat]
-            self.stats[stat] += self.weapon.Stat_Boosts[stat]
+            self.stats[stat] *= int(1 + self.lvl / 25)
+            if self.armor is not None:
+                self.stats[stat] += self.armor.Stat_Boosts[stat]
+            if self.weapon is not None:
+                self.stats[stat] += self.weapon.Stat_Boosts[stat]
 
     def equip_armor(self, armor):
 
@@ -77,9 +79,9 @@ class BaseCharacter:
             self.calculate_characteristics()
 
     def level_up(self):
-        if self.xp >= XP_TABLE[self.level]:
-            self.xp -= XP_TABLE[self.level]
-            self.level += 1
+        if self.xp >= XP_TABLE[self.lvl]:
+            self.xp -= XP_TABLE[self.lvl]
+            self.lvl += 1
             self.calculate_characteristics()
 
     def attack(self, target) -> int:
