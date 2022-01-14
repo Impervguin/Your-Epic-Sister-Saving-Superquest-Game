@@ -10,9 +10,12 @@ class Game:
         self.application = thorpy.Application(self.window_size, "YESSS")
         self.elements = []
         self.save_opened = False
+        self.obj = sqlite3.connect(f"BaseObjects.db")
+        self.obj_cur = self.obj.cursor()
         self.background = thorpy.Background(elements=self.elements)
         self.menu = thorpy.Menu(self.background)
         self.params = {'lvl': None, 'chr': None}
+        self.inventory = []
         self.start_menu_window()
 
     def init_window(self):
@@ -68,7 +71,8 @@ class Game:
         self.cur.execute("UPDATE Heroes SET available = '1' where id = '1'")
 
         self.cur.execute("UPDATE Levels SET completed = '0'")
-
+        f = open("saves/inventory.txt", "w", encoding="utf-8")
+        f.close()
         self.load_save()
 
     def load_save(self):
@@ -86,14 +90,21 @@ class Game:
             for i in range(len(characteristics)):
                 d[characteristics[i]] = hero[i]
             self.heroes[hero[0]] = Classes.BaseCharacter(d)
-        print(self.heroes)
 
         self.levels = dict()
         for level in self.cur.execute("SELECT * FROM Levels").fetchall():
             self.levels[level[0]] = bool(level[1])
 
-
-        print(self.levels)
+        f = open("saves/inventory.txt", "r", encoding="utf-8")
+        ids = [int(i) for i in f.readline().split()]
+        f.close()
+        inv = [self.obj_cur.execute(f"SELECT * FROM items WHERE id='{el}'").fetchone() for el in ids]
+        item_char = ("id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier", "accuracy", "dodge")
+        for obj in inv:
+            d = dict()
+            for j in range(len(item_char)):
+                d[item_char[j]] = obj[j]
+            self.inventory.append(Classes.Armor(d) if d["type"] == "armor" else Classes.Weapon(d))
 
     def disclaimer_window(self):
         def press():
@@ -112,6 +123,41 @@ class Game:
         self.start_window()
 
     def character_view(self, id):
+
+        def armor_button_handler(item):
+            global ITEM
+            ITEM = item
+            thorpy.launch_nonblocking_choices(f"Экипировать {item.name}?", [("Да", equip_armor), ("Нет", None)])
+
+        def weapon_button_handler(item):
+            global ITEM
+            ITEM = item
+            thorpy.launch_nonblocking_choices(f"Экипировать {item.name}?", [("Да", equip_weapon), ("Нет", None)])
+
+        def equip_armor():
+            armor = hero.armor
+            item = ITEM
+            index = self.inventory.index(item)
+            self.inventory[index] = armor
+            hero.equip_armor(item.id)
+
+            self.clear_window()
+            self.character_view(id)
+
+        def equip_weapon():
+            weapon = hero.weapon
+            item = ITEM
+            index = self.inventory.index(item)
+            self.inventory[index] = weapon
+            hero.equip_weapon(item.id)
+            self.clear_window()
+            self.character_view(id)
+
+        def go_back_button_handler():
+            self.clear_window()
+            self.level_selector()
+
+
         hero = self.heroes[id]
         d = {"mag": "Магическая", "phys": "Физическая", "hybrid":"Гибридная"}
         im = thorpy.Image(f"sprites/{id}/char.png")
@@ -137,11 +183,15 @@ class Game:
             thorpy.OneLineText("Шанс крита"),
             thorpy.OneLineText("Множитель крита"),
             thorpy.OneLineText("Точность"),
-            thorpy.OneLineText("Уворот")
+            thorpy.OneLineText("Уворот"),
+            thorpy.OneLineText("Броня"),
+            thorpy.OneLineText("Оружие")
         ]
 
         for el in els_name:
             el.set_font_size(30)
+        weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[0] if hero.weapon.id != 0 else "Отсутвует"
+        armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[0] if hero.armor.id != 0 else "Отсутвует"
         els_value = [
             thorpy.OneLineText(str(hero.lvl)),
             thorpy.OneLineText(str(hero.xp)),
@@ -161,7 +211,9 @@ class Game:
             thorpy.OneLineText(str(hero.stats["crit_chance"]) + "%"),
             thorpy.OneLineText(str(hero.stats["crit_modifier"]) + "%"),
             thorpy.OneLineText(str(hero.stats["accuracy"]) + "%"),
-            thorpy.OneLineText(str(hero.stats["dodge"]) + "%")
+            thorpy.OneLineText(str(hero.stats["dodge"]) + "%"),
+            thorpy.OneLineText(armor_name),
+            thorpy.OneLineText(weapon_name),
         ]
         for el in els_value:
             el.set_font_size(30)
@@ -172,8 +224,40 @@ class Game:
 
         char_name_store = thorpy.store(char_box, elements=els_name, align="left", x=60, y=85)
         char_value_store = thorpy.store(char_box, elements=els_value, align="right", x=460, y=85)
+        inv_buttons = [thorpy.make_button("", func=armor_button_handler if el.type == "armor" else weapon_button_handler, params={"item":el}) for el in self.inventory]
+        for i in range(len(inv_buttons)):
+            if i % 3 == 0:
+                inv_buttons[i].set_topleft((30, 30 + 150 * (i // 3)))
+            elif i % 3 == 1:
+                inv_buttons[i].set_topleft((160, 30 + 150 * (i // 3)))
+            else:
+                inv_buttons[i].set_topleft((290, 30 + 150 * (i // 3)))
+            inv_buttons[i].set_size((100, 100))
+            inv_buttons[i].set_text(self.inventory[i].name)
+            inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
 
-        self.elements = [im, char_box]
+
+
+        inventory_box = thorpy.Box(inv_buttons)
+        for i in range(len(inv_buttons)):
+            if i % 3 == 0:
+                inv_buttons[i].set_topleft((30, 30 + 150 * (i // 3)))
+            elif i % 3 == 1:
+                inv_buttons[i].set_topleft((160, 30 + 150 * (i // 3)))
+            else:
+                inv_buttons[i].set_topleft((290, 30 + 150 * (i // 3)))
+            inv_buttons[i].set_size((100, 100))
+            inv_buttons[i].set_text(self.inventory[i].name)
+            inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
+        inventory_box.set_topleft((970, 75))
+        inventory_box.set_size((420, 860))
+
+
+        go_back_button = thorpy.make_button("Вернуться назад", func=go_back_button_handler)
+        go_back_button.set_topleft((520, 815))
+        go_back_button.set_size((400, 120))
+
+        self.elements = [im, char_box, inventory_box, go_back_button]
         self.init_window()
         self.start_window()
 

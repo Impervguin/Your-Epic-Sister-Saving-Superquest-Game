@@ -1,7 +1,8 @@
 import random
-
+import sqlite3
 XP_TABLE = {1: 500, 2: 1000}  # Таблица требуемоего опыта для перехода новый уровень. заполнить позже
-
+OBJ = sqlite3.connect("BaseObjects.db")
+OBJ_CUR = OBJ.cursor()
 
 class BaseCharacter:
     def __init__(self, characteristics):
@@ -38,10 +39,9 @@ class BaseCharacter:
         self.base_stats["crit_modifier"] = 150
         self.base_stats["accuracy"] = 10
         self.base_stats["dodge"] = 10
-        if characteristics["weapon_id"] == 0:
-            self.equip_weapon(None)
-        if characteristics["armor_id"] == 0:
-            self.equip_armor(None)
+
+        self.equip_weapon(characteristics["weapon_id"])
+        self.equip_armor(characteristics["armor_id"])
         self.calculate_characteristics()
 
     def calculate_characteristics(self):  # считает характеристики относительно уровня, special и предметов
@@ -63,20 +63,38 @@ class BaseCharacter:
         for stat in self.stats.keys():
             self.stats[stat] *= int(1 + self.lvl / 25)
             if self.armor is not None:
-                self.stats[stat] += self.armor.Stat_Boosts[stat]
+                self.stats[stat] += self.armor.stat_boosts[stat]
             if self.weapon is not None:
-                self.stats[stat] += self.weapon.Stat_Boosts[stat]
+                self.stats[stat] += self.weapon.stat_boosts[stat]
 
-    def equip_armor(self, armor):
+    def equip_armor(self, armor_id):
+        if armor_id == 0:
+            self.armor = None
+        else:
+            obj = OBJ_CUR.execute(f"SELECT * FROM items WHERE id='{armor_id}'").fetchone()
+            item_char = ("id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
+                        "crit_modifier", "accuracy", "dodge")
+            d = dict()
+            for j in range(len(item_char)):
+                d[item_char[j]] = obj[j]
+            self.armor = Armor(d)
 
-        self.armor = armor
-        if armor is not None:
+        if self.armor is not None:
             self.calculate_characteristics()
 
-    def equip_weapon(self, weapon):
-        self.weapon = weapon
-        if weapon is not None:
-            self.calculate_characteristics()
+    def equip_weapon(self, weapon_id):
+        if weapon_id == 0:
+            self.weapon = None
+        else:
+            obj = OBJ_CUR.execute(f"SELECT * FROM items WHERE id='{weapon_id}'").fetchone()
+            item_char = ("id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
+                         "crit_modifier", "accuracy", "dodge")
+            d = dict()
+            for j in range(len(item_char)):
+                d[item_char[j]] = obj[j]
+            self.weapon = Weapon(d)
+        # if self.weapon is not None:
+        #     self.calculate_characteristics()
 
     def level_up(self):
         if self.xp >= XP_TABLE[self.lvl]:
@@ -148,13 +166,13 @@ class EquipItem:
 class Armor(EquipItem):
     def __init__(self, stats):
         super(Armor, self).__init__(stats)
-        self.item_class = "Armor"
+        self.type = "armor"
 
 
 class Weapon(EquipItem):
     def __init__(self, stats):
         super(Weapon, self).__init__(stats)
-        self.item_class = "Weapon"
+        self.type = "weapon"
 
 
 class FightMember:
