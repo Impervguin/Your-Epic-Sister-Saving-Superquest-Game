@@ -1,8 +1,10 @@
 import random
 import sqlite3
+
 XP_TABLE = {1: 500, 2: 1000}  # Таблица требуемоего опыта для перехода новый уровень. заполнить позже
 OBJ = sqlite3.connect("BaseObjects.db")
 OBJ_CUR = OBJ.cursor()
+
 
 class BaseCharacter:
     def __init__(self, characteristics):
@@ -73,7 +75,7 @@ class BaseCharacter:
         else:
             obj = OBJ_CUR.execute(f"SELECT * FROM items WHERE id='{armor_id}'").fetchone()
             item_char = ("id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
-                        "crit_modifier", "accuracy", "dodge")
+                         "crit_modifier", "accuracy", "dodge")
             d = dict()
             for j in range(len(item_char)):
                 d[item_char[j]] = obj[j]
@@ -125,7 +127,6 @@ class BaseCharacter:
 
         total_damage = int(mag_damage + phys_damage)
 
-        target.stats["hp"] -= total_damage
         return total_damage
 
     def specattack(self, target):
@@ -149,6 +150,62 @@ class BaseCharacter:
 
         target.stats["hp"] -= total_damage
         return total_damage
+
+
+class BaseEnemy:
+    def __init__(self, characteristics):
+        self.id = characteristics["id"]
+        self.name = characteristics["name"]
+        self.character_init(characteristics)
+
+    def character_init(self, characteristics):
+        self.lvl = characteristics["lvl"]
+
+        self.attack_type = characteristics["attack_type"]
+
+        self.base_stats = dict()
+        self.base_stats["max_hp"] = characteristics["max_hp"]
+        self.base_stats["phys_atk"] = characteristics["phys_atk"]
+        self.base_stats["mag_atk"] = characteristics["mag_atk"]
+        self.base_stats["phys_def"] = characteristics["phys_def"]
+        self.base_stats["mag_def"] = characteristics["mag_def"]
+        self.base_stats["crit_chance"] = characteristics["crit_chance"]
+        self.base_stats["crit_modifier"] = characteristics["crit_modifier"]
+        self.base_stats["accuracy"] = characteristics["accuracy"]
+        self.base_stats["dodge"] = characteristics["dodge"]
+
+        self.calculate_characteristics()
+
+    def attack(self, target) -> int:
+        types = {"phys": (1, 0),
+                 "mag": (0, 1),
+                 "hybrid": (0.6, 0.6)
+                 }
+        phys_damage_modifier, mag_damage_modifier = types[self.attack_type]
+
+        phys_damage = phys_damage_modifier * self.stats["phys_atk"]
+        mag_damage = mag_damage_modifier * self.stats["mag_atk"]
+
+        r = random.randint(0, 101)
+        if r <= self.stats["crit_chance"]:
+            phys_damage *= self.stats["crit_modifier"] / 100
+            mag_damage *= self.stats["crit_modifier"] / 100
+
+        phys_damage -= target.stats["phys_def"]
+        mag_damage -= target.stats["mag_def"]
+
+        mag_damage = max(0, mag_damage)
+        phys_damage = max(0, phys_damage)
+
+        total_damage = int(mag_damage + phys_damage)
+
+        return total_damage
+
+    def calculate_characteristics(self):
+        self.stats = dict()
+        for stat in self.base_stats.keys():
+            self.stats[stat] *= int(1 + self.lvl / 25)
+
 
 
 class EquipItem:

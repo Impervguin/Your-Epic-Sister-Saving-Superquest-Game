@@ -267,7 +267,12 @@ class Game:
 
 
     def character_selector(self):
+        
+
+
+
         self.start_window()
+
 
     def level_selector(self):
         def lvl_button_parser(n):
