@@ -190,8 +190,8 @@ class Game:
 
         for el in els_name:
             el.set_font_size(30)
-        weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[0] if hero.weapon.id != 0 else "Отсутвует"
-        armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[0] if hero.armor.id != 0 else "Отсутвует"
+        weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[0] if hero.weapon is not None else "Отсутвует"
+        armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[0] if hero.armor is not None else "Отсутвует"
         els_value = [
             thorpy.OneLineText(str(hero.lvl)),
             thorpy.OneLineText(str(hero.xp)),
@@ -222,6 +222,7 @@ class Game:
         char_box.set_topleft((50, 75))
         char_box.set_size((420, 860))
 
+
         char_name_store = thorpy.store(char_box, elements=els_name, align="left", x=60, y=85)
         char_value_store = thorpy.store(char_box, elements=els_value, align="right", x=460, y=85)
         inv_buttons = [thorpy.make_button("", func=armor_button_handler if el.type == "armor" else weapon_button_handler, params={"item":el}) for el in self.inventory]
@@ -237,15 +238,18 @@ class Game:
             inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
 
 
+        inv_title = thorpy.make_text("Инвентарь", font_size=20)
 
-        inventory_box = thorpy.Box(inv_buttons)
+
+        inventory_box = thorpy.Box(inv_buttons + [inv_title])
+        inv_title.set_topleft((165, 15))
         for i in range(len(inv_buttons)):
             if i % 3 == 0:
-                inv_buttons[i].set_topleft((30, 30 + 150 * (i // 3)))
+                inv_buttons[i].set_topleft((30, 50 + 150 * (i // 3)))
             elif i % 3 == 1:
-                inv_buttons[i].set_topleft((160, 30 + 150 * (i // 3)))
+                inv_buttons[i].set_topleft((160, 50 + 150 * (i // 3)))
             else:
-                inv_buttons[i].set_topleft((290, 30 + 150 * (i // 3)))
+                inv_buttons[i].set_topleft((290, 50 + 150 * (i // 3)))
             inv_buttons[i].set_size((100, 100))
             inv_buttons[i].set_text(self.inventory[i].name)
             inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
