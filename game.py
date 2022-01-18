@@ -270,17 +270,17 @@ class Game:
 
 
     def character_selector(self, id):
-        print(self.selected_heroes)
-        HERO = None
         def char_button_handler(hero):
             global HERO
             HERO = hero
+            print(HERO)
             thorpy.launch_nonblocking_choices(f"На какое место вы хотите поставить персонажа {hero.name.capitalize()}?",
                                               [("Напарник 1", set_partner_1), ("Напарник 2", set_partner_2), ("Отмена", None)]
                                               )
-        char_buttons = [thorpy.make_button(h.name.capitalize(), func=char_button_handler, params={"hero":h}) for h in self.heroes.values()]
+
 
         def set_partner_1():
+            print(HERO)
             self.selected_heroes[0] = HERO
 
             self.clear_window()
@@ -292,12 +292,29 @@ class Game:
             self.clear_window()
             self.character_selector(id)
 
+        def go_back_button_handler():
+            self.clear_window()
+            self.level_selector()
 
+
+        def proceed_button_handler():
+            pass
+
+
+        def reset_button_handler():
+            self.selected_heroes[0] = None
+            self.selected_heroes[2] = None
+            self.clear_window()
+            self.character_selector(id)
+
+        char_buttons = [thorpy.make_button(h.name.capitalize(), func=char_button_handler, params={"hero": h}) for h in
+                        self.heroes.values()]
         char_box = thorpy.Box(char_buttons)
         for i in range(len(char_buttons)):
             char_buttons[i].set_size((120, 120))
             char_buttons[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
             char_buttons[i].set_active(self.heroes[i + 1].available)
+        char_buttons[0].set_active(False)
         char_store = thorpy.store(char_box,char_buttons, "h", gap=50)
 
         char_box.fit_children()
@@ -310,7 +327,24 @@ class Game:
             if self.selected_heroes[i] is not None:
                 selected_char[i].set_image(pygame.image.load(f"sprites/{self.selected_heroes[i].id}/icon.png"))
 
-        self.elements = [char_box] + selected_char
+        reset = thorpy.make_button("Сброс", func=reset_button_handler)
+        reset.set_topleft((620, 361))
+        reset.set_size((200, 80))
+
+
+        title = thorpy.make_text(f"Уровень {id}", font_size=40)
+        title.set_topleft((0, 50))
+        title.center(axis=(True, False))
+
+        go_back_button = thorpy.make_button("Вернуться назад", func=go_back_button_handler)
+        go_back_button.set_topleft((270, 800))
+        go_back_button.set_size((400, 120))
+
+        proceed_button = thorpy.make_button("Далее", func=proceed_button_handler)
+        proceed_button.set_topleft((770, 800))
+        proceed_button.set_size((400, 120))
+
+        self.elements = [char_box, title, go_back_button, proceed_button, reset] + selected_char
         self.init_window()
         self.start_window()
 
