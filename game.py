@@ -16,6 +16,7 @@ class Game:
         self.menu = thorpy.Menu(self.background)
         self.params = {'lvl': None, 'chr': None}
         self.inventory = []
+
         self.start_menu_window()
 
     def init_window(self):
@@ -105,6 +106,7 @@ class Game:
             for j in range(len(item_char)):
                 d[item_char[j]] = obj[j]
             self.inventory.append(Classes.Armor(d) if d["type"] == "armor" else Classes.Weapon(d))
+        self.selected_heroes = [None, self.heroes[1], None]
 
     def disclaimer_window(self):
         def press():
@@ -163,6 +165,7 @@ class Game:
         im = thorpy.Image(f"sprites/{id}/char.png")
         im.set_topleft((570, 120))
         im.set_size((300, 600))
+
         els_name = [
             thorpy.OneLineText("Уровень"),
             thorpy.OneLineText("Опыт"),
@@ -267,10 +270,25 @@ class Game:
 
 
     def character_selector(self):
-        
+        char_buttons = [thorpy.make_button(h.name.capitalize(), func=None) for h in self.heroes.values()]
 
 
+        char_box = thorpy.Box(char_buttons)
+        for i in range(len(char_buttons)):
+            char_buttons[i].set_size((120, 120))
+            char_buttons[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
+        char_store = thorpy.store(char_box,char_buttons, "h", gap=50)
 
+        char_box.fit_children()
+        char_box.set_topleft((0, 492))
+        char_box.center(axis=(True, False))
+        selected_char = [thorpy.Image(path=f"sprites/{h.id}/icon.png") if h is not None else thorpy.Element() for h in self.selected_heroes]
+        for i in range(len(selected_char)):
+            selected_char[i].set_topleft((370, 290 * i, 190))
+            selected_char[i].set_size((120, 120))
+
+        self.elements = [char_box]
+        self.init_window()
         self.start_window()
 
 
