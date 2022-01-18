@@ -2,6 +2,7 @@ import thorpy
 import Classes
 import pygame
 import sqlite3
+import splitter
 
 
 class Game:
@@ -81,9 +82,9 @@ class Game:
             self.open_save()
         heroes = self.cur.execute("SELECT * FROM Heroes").fetchall()
         characteristics = (
-        "id", "name", "lvl", "xp", "weapon_id", "armor_id", "strength", "perception", "endurance", "charisma",
-        "intelligence", "agility", "luck", "attack_type", "phys_spec_attack_modifier", "mag_spec_attack_modifier",
-        "spec_attack_recovery", "available")
+            "id", "name", "lvl", "xp", "weapon_id", "armor_id", "strength", "perception", "endurance", "charisma",
+            "intelligence", "agility", "luck", "attack_type", "phys_spec_attack_modifier", "mag_spec_attack_modifier",
+            "spec_attack_recovery", "available")
 
         self.heroes = dict()
         for hero in heroes:
@@ -100,7 +101,9 @@ class Game:
         ids = [int(i) for i in f.readline().split()]
         f.close()
         inv = [self.obj_cur.execute(f"SELECT * FROM items WHERE id='{el}'").fetchone() for el in ids]
-        item_char = ("id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier", "accuracy", "dodge")
+        item_char = (
+        "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier",
+        "accuracy", "dodge")
         for obj in inv:
             d = dict()
             for j in range(len(item_char)):
@@ -159,9 +162,8 @@ class Game:
             self.clear_window()
             self.level_selector()
 
-
         hero = self.heroes[id]
-        d = {"mag": "Магическая", "phys": "Физическая", "hybrid":"Гибридная"}
+        d = {"mag": "Магическая", "phys": "Физическая", "hybrid": "Гибридная"}
         im = thorpy.Image(f"sprites/{id}/char.png")
         im.set_topleft((570, 120))
         im.set_size((300, 600))
@@ -193,8 +195,10 @@ class Game:
 
         for el in els_name:
             el.set_font_size(30)
-        weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[0] if hero.weapon is not None else "Отсутвует"
-        armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[0] if hero.armor is not None else "Отсутвует"
+        weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[
+            0] if hero.weapon is not None else "Отсутвует"
+        armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[
+            0] if hero.armor is not None else "Отсутвует"
         els_value = [
             thorpy.OneLineText(str(hero.lvl)),
             thorpy.OneLineText(str(hero.xp)),
@@ -225,10 +229,11 @@ class Game:
         char_box.set_topleft((50, 75))
         char_box.set_size((420, 860))
 
-
         char_name_store = thorpy.store(char_box, elements=els_name, align="left", x=60, y=85)
         char_value_store = thorpy.store(char_box, elements=els_value, align="right", x=460, y=85)
-        inv_buttons = [thorpy.make_button("", func=armor_button_handler if el.type == "armor" else weapon_button_handler, params={"item":el}) for el in self.inventory]
+        inv_buttons = [
+            thorpy.make_button("", func=armor_button_handler if el.type == "armor" else weapon_button_handler,
+                               params={"item": el}) for el in self.inventory]
         for i in range(len(inv_buttons)):
             if i % 3 == 0:
                 inv_buttons[i].set_topleft((30, 30 + 150 * (i // 3)))
@@ -240,9 +245,7 @@ class Game:
             inv_buttons[i].set_text(self.inventory[i].name)
             inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
 
-
         inv_title = thorpy.make_text("Инвентарь", font_size=20)
-
 
         inventory_box = thorpy.Box(inv_buttons + [inv_title])
         inv_title.set_topleft((165, 15))
@@ -254,11 +257,10 @@ class Game:
             else:
                 inv_buttons[i].set_topleft((290, 50 + 150 * (i // 3)))
             inv_buttons[i].set_size((100, 100))
-            inv_buttons[i].set_text(self.inventory[i].name)
+            inv_buttons[i].set_text(splitter.splitter(self.inventory[i].name))
             inv_buttons[i].set_image(img=pygame.image.load(f"sprites/items/{self.inventory[i].id}/icon.png"))
         inventory_box.set_topleft((970, 75))
         inventory_box.set_size((420, 860))
-
 
         go_back_button = thorpy.make_button("Вернуться назад", func=go_back_button_handler)
         go_back_button.set_topleft((520, 815))
@@ -268,16 +270,15 @@ class Game:
         self.init_window()
         self.start_window()
 
-
     def character_selector(self, id):
         def char_button_handler(hero):
             global HERO
             HERO = hero
             print(HERO)
             thorpy.launch_nonblocking_choices(f"На какое место вы хотите поставить персонажа {hero.name.capitalize()}?",
-                                              [("Напарник 1", set_partner_1), ("Напарник 2", set_partner_2), ("Отмена", None)]
+                                              [("Напарник 1", set_partner_1), ("Напарник 2", set_partner_2),
+                                               ("Отмена", None)]
                                               )
-
 
         def set_partner_1():
             print(HERO)
@@ -296,10 +297,8 @@ class Game:
             self.clear_window()
             self.level_selector()
 
-
         def proceed_button_handler():
             pass
-
 
         def reset_button_handler():
             self.selected_heroes[0] = None
@@ -315,7 +314,7 @@ class Game:
             char_buttons[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
             char_buttons[i].set_active(self.heroes[i + 1].available)
         char_buttons[0].set_active(False)
-        char_store = thorpy.store(char_box,char_buttons, "h", gap=50)
+        char_store = thorpy.store(char_box, char_buttons, "h", gap=50)
 
         char_box.fit_children()
         char_box.set_topleft((0, 492))
@@ -330,7 +329,6 @@ class Game:
         reset = thorpy.make_button("Сброс", func=reset_button_handler)
         reset.set_topleft((620, 361))
         reset.set_size((200, 80))
-
 
         title = thorpy.make_text(f"Уровень {id}", font_size=40)
         title.set_topleft((0, 50))
@@ -347,7 +345,6 @@ class Game:
         self.elements = [char_box, title, go_back_button, proceed_button, reset] + selected_char
         self.init_window()
         self.start_window()
-
 
     def level_selector(self):
         def lvl_button_parser(n):
@@ -385,8 +382,10 @@ class Game:
 
         Levels_Box.set_topleft((0, 0))
 
-        Characters = [thorpy.make_button(self.heroes[i + 1].name.capitalize(), func=chr_button_parser, params={"n": i + 1}) for i in
-                      range(len(self.heroes))]
+        Characters = [
+            thorpy.make_button(self.heroes[i + 1].name.capitalize(), func=chr_button_parser, params={"n": i + 1}) for i
+            in
+            range(len(self.heroes))]
         Characters_Box = thorpy.Box(elements=Characters)
         for i in range(len(Characters)):
             Characters[i].set_size((120, 120))
