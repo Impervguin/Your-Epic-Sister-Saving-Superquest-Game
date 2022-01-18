@@ -269,25 +269,48 @@ class Game:
         self.start_window()
 
 
-    def character_selector(self):
-        char_buttons = [thorpy.make_button(h.name.capitalize(), func=None) for h in self.heroes.values()]
+    def character_selector(self, id):
+        print(self.selected_heroes)
+        HERO = None
+        def char_button_handler(hero):
+            global HERO
+            HERO = hero
+            thorpy.launch_nonblocking_choices(f"На какое место вы хотите поставить персонажа {hero.name.capitalize()}?",
+                                              [("Напарник 1", set_partner_1), ("Напарник 2", set_partner_2), ("Отмена", None)]
+                                              )
+        char_buttons = [thorpy.make_button(h.name.capitalize(), func=char_button_handler, params={"hero":h}) for h in self.heroes.values()]
+
+        def set_partner_1():
+            self.selected_heroes[0] = HERO
+
+            self.clear_window()
+            self.character_selector(id)
+
+        def set_partner_2():
+            self.selected_heroes[2] = HERO
+
+            self.clear_window()
+            self.character_selector(id)
 
 
         char_box = thorpy.Box(char_buttons)
         for i in range(len(char_buttons)):
             char_buttons[i].set_size((120, 120))
             char_buttons[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
+            char_buttons[i].set_active(self.heroes[i + 1].available)
         char_store = thorpy.store(char_box,char_buttons, "h", gap=50)
 
         char_box.fit_children()
         char_box.set_topleft((0, 492))
         char_box.center(axis=(True, False))
-        selected_char = [thorpy.Image(path=f"sprites/{h.id}/icon.png") if h is not None else thorpy.Element() for h in self.selected_heroes]
+        selected_char = [thorpy.Element() for h in self.selected_heroes]
         for i in range(len(selected_char)):
-            selected_char[i].set_topleft((370, 290 * i, 190))
+            selected_char[i].set_topleft((370 + 290 * i, 190))
             selected_char[i].set_size((120, 120))
+            if self.selected_heroes[i] is not None:
+                selected_char[i].set_image(pygame.image.load(f"sprites/{self.selected_heroes[i].id}/icon.png"))
 
-        self.elements = [char_box]
+        self.elements = [char_box] + selected_char
         self.init_window()
         self.start_window()
 
@@ -296,7 +319,7 @@ class Game:
         def lvl_button_parser(n):
             self.params['lvl'] = n
             self.clear_window()
-            self.character_selector()
+            self.character_selector(n)
 
         def chr_button_parser(n):
             self.clear_window()
