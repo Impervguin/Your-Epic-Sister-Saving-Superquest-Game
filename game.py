@@ -168,6 +168,8 @@ class Game:
         im.set_topleft((570, 120))
         im.set_size((300, 600))
 
+        characteristics_font_size = 25
+
         els_name = [
             thorpy.OneLineText("Уровень"),
             thorpy.OneLineText("Опыт"),
@@ -194,7 +196,7 @@ class Game:
         ]
 
         for el in els_name:
-            el.set_font_size(30)
+            el.set_font_size(characteristics_font_size)
         weapon_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.weapon.id}'").fetchone()[
             0] if hero.weapon is not None else "Отсутвует"
         armor_name = self.obj_cur.execute(f"SELECT name FROM items where id= '{hero.armor.id}'").fetchone()[
@@ -223,7 +225,7 @@ class Game:
             thorpy.OneLineText(weapon_name),
         ]
         for el in els_value:
-            el.set_font_size(30)
+            el.set_font_size(characteristics_font_size)
         els = els_name + els_value
         char_box = thorpy.Box(els)
         char_box.set_topleft((50, 75))
