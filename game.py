@@ -102,14 +102,27 @@ class Game:
         f.close()
         inv = [self.obj_cur.execute(f"SELECT * FROM items WHERE id='{el}'").fetchone() for el in ids]
         item_char = (
-        "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier",
-        "accuracy", "dodge")
+            "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
+            "crit_modifier",
+            "accuracy", "dodge")
         for obj in inv:
             d = dict()
             for j in range(len(item_char)):
                 d[item_char[j]] = obj[j]
             self.inventory.append(Classes.Armor(d) if d["type"] == "armor" else Classes.Weapon(d))
         self.selected_heroes = [None, self.heroes[1], None]
+
+    def save_game(self):
+        for h in self.heroes.values():
+            self.cur.execute(
+                f"UPDATE Heroes SET lvl = '{h.lvl}', xp = '{h.xp}', weapon_id = '{h.weapon.id if h.weapon is not None else 0}', armor_id = '{h.armor.id if h.armor is not None else 0}' WHERE id = '{h.id}'")
+        for l in self.levels.keys():
+            self.cur.execute(f"UPDATE Levels SET completed = {self.levels[l]} WHERE id = {l}")
+        self.save.commit()
+
+        f = open("saves/inventory.txt", "w", encoding="utf-8")
+        f.write(" ".join([str(el.id) for el in self.inventory]))
+        f.close()
 
     def disclaimer_window(self):
         def press():
@@ -143,7 +156,10 @@ class Game:
             armor = hero.armor
             item = ITEM
             index = self.inventory.index(item)
-            self.inventory[index] = armor
+            if armor is not None:
+                self.inventory[index] = armor
+            else:
+                self.inventory.pop(index)
             hero.equip_armor(item.id)
 
             self.clear_window()
@@ -153,8 +169,12 @@ class Game:
             weapon = hero.weapon
             item = ITEM
             index = self.inventory.index(item)
-            self.inventory[index] = weapon
+            if weapon is not None:
+                self.inventory[index] = weapon
+            else:
+                self.inventory.pop(index)
             hero.equip_weapon(item.id)
+
             self.clear_window()
             self.character_view(id)
 
@@ -276,20 +296,22 @@ class Game:
         def char_button_handler(hero):
             global HERO
             HERO = hero
-            print(HERO)
             thorpy.launch_nonblocking_choices(f"На какое место вы хотите поставить персонажа {hero.name.capitalize()}?",
                                               [("Напарник 1", set_partner_1), ("Напарник 2", set_partner_2),
                                                ("Отмена", None)]
                                               )
 
         def set_partner_1():
-            print(HERO)
+            if self.selected_heroes[2] == HERO:
+                self.selected_heroes[2] = None
             self.selected_heroes[0] = HERO
 
             self.clear_window()
             self.character_selector(id)
 
         def set_partner_2():
+            if self.selected_heroes[0] == HERO:
+                self.selected_heroes[0] = None
             self.selected_heroes[2] = HERO
 
             self.clear_window()
@@ -300,7 +322,8 @@ class Game:
             self.level_selector()
 
         def proceed_button_handler():
-            pass
+            self.clear_window()
+            self.fight_screen(id)
 
         def reset_button_handler():
             self.selected_heroes[0] = None
@@ -348,6 +371,9 @@ class Game:
         self.init_window()
         self.start_window()
 
+    def fight_screen(self, level_id):
+        pass
+
     def level_selector(self):
         def lvl_button_parser(n):
             self.params['lvl'] = n
@@ -388,11 +414,17 @@ class Game:
             thorpy.make_button(self.heroes[i + 1].name.capitalize(), func=chr_button_parser, params={"n": i + 1}) for i
             in
             range(len(self.heroes))]
-        Characters_Box = thorpy.Box(elements=Characters)
+        save_button = thorpy.make_button("Сохранить игру", func=self.save_game)
+
+        Characters_Box = thorpy.Box(elements=Characters + [save_button])
         for i in range(len(Characters)):
             Characters[i].set_size((120, 120))
             Characters[i].set_image(pygame.image.load(f"sprites/{i + 1}/icon.png"))
             Characters[i].set_active(self.heroes[i + 1].available)
+
+        save_button.set_topleft((100, 800))
+        save_button.set_size((240, 120))
+
         Characters_Box.set_size((440, 1024))
 
         Characters_Title = thorpy.make_text("Персонажи", 48)
