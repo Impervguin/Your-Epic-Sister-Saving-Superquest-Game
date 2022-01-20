@@ -204,7 +204,7 @@ class BaseEnemy:
     def calculate_characteristics(self):
         self.stats = dict()
         for stat in self.base_stats.keys():
-            self.stats[stat] *= int(1 + self.lvl / 25)
+            self.stats[stat] = self.base_stats[stat] * int(1 + self.lvl / 25)
 
 
 
@@ -233,57 +233,61 @@ class Weapon(EquipItem):
 
 
 class FightMember:
-    def __init__(self, character: BaseCharacter):
+    def __init__(self, character):
         self.character = character
-        self.defeated = False
-        self.made_move = False
-        self.turns_before_spec_attack = 0
-        self.character.stats["hp"] = self.character.stats["max_hp"]
+        if character is None:
+            self.defeated = True
+            self.made_move = True
+        else:
+            self.defeated = False
+            self.made_move = False
+            self.turns_before_spec_attack = 0
+            self.character.stats["hp"] = self.character.stats["max_hp"]
 
 
-class Fight:
-    def __init__(self, command1: (list, tuple), command2: (list, tuple)):
-        self.commands = []
-        self.commands.append([FightMember(char) for char in command1])
-        self.commands.append([FightMember(char) for char in command2])
-        self.end = False
-        self.turn = 0
-
-    def make_move(self, n_actor, n_object, move_type):
-        actor, object = None, None
-        for char in self.commands[self.turn]:
-            if char.character.name == n_actor:
-                actor = char
-                break
-        for char in self.commands[abs(self.turn - 1)]:
-            if char.character.name == n_object:
-                object = char
-                break
-        if actor is None or object is None:
-            return "Выбран не существующий персонаж"
-
-        if move_type == "specattack":
-            if not actor.turns_before_spec_attack:
-                damage = actor.character.specattack(object.character)
-                actor.turns_before_spec_attack = actor.character.spec_attack_recovery
-
-        elif move_type == "attack":
-            damage = actor.character.attack(object.character)
-        if object.character.stats["hp"] <= 0:
-            object.defeated = True
-        actor.made_move = True
-        if self.check_win():
-            return "Конец боя"
-        return self.check_end_turn()
-
-    def check_end_turn(self):
-        if all([char.made_move for char in self.commands[self.turn]]):
-            self.turn = abs(self.turn - 1)
-            for char in self.commands[self.turn]:
-                char.made_move = False
-                char.turns_before_spec_attack -= 1
-            return "Конец хода"
-        return None
-
-    def check_win(self):
-        self.end = all([char.defeated for char in self.commands[abs(self.turn - 1)]])
+# class Fight:
+#     def __init__(self, command1: (list, tuple), command2: (list, tuple)):
+#         self.commands = []
+#         self.commands.append([FightMember(char) for char in command1])
+#         self.commands.append([FightMember(char) for char in command2])
+#         self.end = False
+#         self.turn = 0
+#
+#     def make_move(self, n_actor, n_object, move_type):
+#         actor, object = None, None
+#         for char in self.commands[self.turn]:
+#             if char.character.name == n_actor:
+#                 actor = char
+#                 break
+#         for char in self.commands[abs(self.turn - 1)]:
+#             if char.character.name == n_object:
+#                 object = char
+#                 break
+#         if actor is None or object is None:
+#             return "Выбран не существующий персонаж"
+#
+#         if move_type == "specattack":
+#             if not actor.turns_before_spec_attack:
+#                 damage = actor.character.specattack(object.character)
+#                 actor.turns_before_spec_attack = actor.character.spec_attack_recovery
+#
+#         elif move_type == "attack":
+#             damage = actor.character.attack(object.character)
+#         if object.character.stats["hp"] <= 0:
+#             object.defeated = True
+#         actor.made_move = True
+#         if self.check_win():
+#             return "Конец боя"
+#         return self.check_end_turn()
+#
+#     def check_end_turn(self):
+#         if all([char.made_move for char in self.commands[self.turn]]):
+#             self.turn = abs(self.turn - 1)
+#             for char in self.commands[self.turn]:
+#                 char.made_move = False
+#                 char.turns_before_spec_attack -= 1
+#             return "Конец хода"
+#         return None
+#
+#     def check_win(self):
+#         self.end = all([char.defeated for char in self.commands[abs(self.turn - 1)]])

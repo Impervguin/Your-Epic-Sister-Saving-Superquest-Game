@@ -20,8 +20,10 @@ class Game:
 
         self.start_menu_window()
 
-    def init_window(self):
+    def init_window(self, reac=[]):
         self.background = thorpy.Background(elements=self.elements)
+        for r in reac:
+            self.background.add_reaction(r)
         self.menu = thorpy.Menu(self.background)
 
     def clear_window(self):
@@ -323,7 +325,7 @@ class Game:
 
         def proceed_button_handler():
             self.clear_window()
-            self.fight_screen(id)
+            self.init_fight(id)
 
         def reset_button_handler():
             self.selected_heroes[0] = None
@@ -370,9 +372,6 @@ class Game:
         self.elements = [char_box, title, go_back_button, proceed_button, reset] + selected_char
         self.init_window()
         self.start_window()
-
-    def fight_screen(self, level_id):
-        pass
 
     def level_selector(self):
         def lvl_button_parser(n):
@@ -444,4 +443,153 @@ class Game:
         self.start_window()
 
 
+    def init_fight(self, level_id):
+        player_team = [Classes.FightMember(char) for char in self.selected_heroes]
+        leveldb = sqlite3.connect("levels.db")
+        lcur = leveldb.cursor()
+        level = lcur.execute(f"SELECT * FROM levels WHERE id='{level_id}'").fetchone()
+        enemy_team = []
+        for i in range(1, 6, 2):
+            if level[i] !=0:
+                enemy = dict()
+                param_names = ("id", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier", "accuracy", "dodge", "attack_type")
+                params = self.obj_cur.execute(f"SELECT * FROM enemies WHERE id = '{level[i]}'").fetchone()
+                for j in range(len(param_names)):
+                    enemy[param_names[j]] = params[j]
+                enemy["lvl"] = level[i + 1]
+                enemy_team.append(Classes.FightMember(Classes.BaseEnemy(enemy)))
+            else:
+                enemy_team.append(Classes.FightMember(None))
+        self.fight_screen(player_team, enemy_team, level_id)
+
+
+
+    def fight_screen(self, pteam, eteam, level_id):
+        def ddl_reaction(event):
+            char = event.value
+            if any([ch in char for ch in [i.name for i in self.heroes.values()]]):
+                char = pteam[int(event.value[1]) - 1].character
+                hero_name.set_text("Имя: " + char.name)
+                hero_atk_type.set_text("Тип атаки: " + char.attack_type)
+                hero_mag_atk.set_text("Маг атака: " + str(char.stats["mag_atk"]))
+                hero_phys_atk.set_text("Физ атака: " + str(char.stats["phys_atk"]))
+                hero_hp.set_text("Хп: " + str(char.stats["hp"]) + "/" + str(char.stats["max_hp"]))
+                hero_box.fit_children()
+                hero_box.center(axis=(True, False))
+
+            else:
+                char = eteam[int(event.value[1]) - 1].character
+                enemy_name.set_text("Имя: " + char.name)
+                enemy_atk_type.set_text("Тип атаки: " + char.attack_type)
+                enemy_mag_def.set_text("Маг защита: " + str(char.stats["mag_def"]))
+                enemy_phys_def.set_text("Физ защита: " + str(char.stats["phys_def"]))
+                enemy_hp.set_text("Хп: " + str(char.stats["hp"]) + "/" + str(char.stats["max_hp"]))
+                enemy_box.fit_children()
+                enemy_box.center(axis=(True, False))
+            self.menu.blit_and_update()
+
+
+
+        heroes = []
+        if not pteam[0].defeated:
+            hero1 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
+            heroes.append(hero1)
+        if not pteam[1].defeated:
+            hero2 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
+            heroes.append(hero2)
+        if not pteam[2].defeated:
+            hero3 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
+            heroes.append(hero3)
+
+        enemies = []
+        if not eteam[0].defeated:
+            e1 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
+            enemies.append(e1)
+        if not eteam[1].defeated:
+            e2 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
+            enemies.append(e2)
+        if not eteam[2].defeated:
+            e3 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
+            enemies.append(e3)
+
+        fight_area = thorpy.Box(heroes + enemies)
+        fight_area.set_topleft((0, 0))
+        fight_area.set_size((1440, 604))
+        fight_area.set_image(pygame.image.load("sprites/background1.png"))
+
+        if not pteam[0].defeated:
+            hero1.set_size((100, 200))
+            hero1.set_topleft((1230, 100))
+        if not pteam[1].defeated:
+            hero2.set_size((100, 200))
+            hero2.set_topleft((1050, 190))
+        if not pteam[2].defeated:
+            hero3.set_size((100, 200))
+            hero3.set_topleft((1270, 350))
+
+        if not eteam[0].defeated:
+            e1.set_size((100, 200))
+            e1.set_topleft((110, 100))
+        if not eteam[1].defeated:
+            e2.set_size((100, 200))
+            e2.set_topleft((290, 190))
+        if not eteam[2].defeated:
+            e3.set_size((100, 200))
+            e3.set_topleft((70, 350))
+
+        selected_hero = None
+        selected_enemy = None
+        hero_chooser = thorpy.DropDownListLauncher(titles=[f"({i + 1})" + pteam[i].character.name for i in range(len(pteam)) if not pteam[i].defeated and not pteam[i].made_move], const_text="Hero:")
+        enemy_chooser = thorpy.DropDownListLauncher(titles=[f"({i + 1})" + eteam[i].character.name for i in range(len(eteam)) if not eteam[i].defeated], const_text="Enemy:")
+        hero_name = thorpy.make_text("Имя:")
+        hero_hp = thorpy.make_text("Хп:")
+        hero_atk_type = thorpy.make_text("Тип атаки:")
+        hero_mag_atk = thorpy.make_text("Маг атака:")
+        hero_phys_atk = thorpy.make_text("Физ атака:")
+        hero_box = thorpy.Box([hero_name, hero_hp, hero_atk_type, hero_phys_atk, hero_mag_atk])
+
+        enemy_name = thorpy.make_text("Имя:")
+        enemy_hp = thorpy.make_text("Хп:")
+        enemy_atk_type = thorpy.make_text("Тип атаки:")
+        enemy_mag_def = thorpy.make_text("Маг защита:")
+        enemy_phys_def = thorpy.make_text("Физ защита:")
+        enemy_box = thorpy.Box([enemy_name, enemy_hp, enemy_atk_type, enemy_phys_def, enemy_mag_def])
+
+        atk_button = thorpy.make_button("Атаковать")
+        spec_atk_button = thorpy.make_button("Спец атака")
+        wait_button = thorpy.make_button("Ждать")
+
+
+        control_box = thorpy.Box([hero_chooser, enemy_chooser, hero_box, enemy_box, atk_button, spec_atk_button, wait_button])
+        hero_box.set_topleft((0, 75))
+        hero_box.fit_children()
+        hero_box.center(axis=(True, False))
+        enemy_box.set_topleft((0, 245))
+        enemy_box.fit_children()
+        enemy_box.center(axis=(True, False))
+        hero_chooser.set_topleft((0, 30))
+        hero_chooser.center(axis=(True, False))
+        enemy_chooser.set_topleft((0, 200))
+        enemy_chooser.center(axis=(True, False))
+
+        #
+        atk_button.set_topleft((1080, 55))
+        spec_atk_button.set_topleft((1080, 175))
+        wait_button.set_topleft((1080, 295))
+        atk_button.set_size((300, 70))
+        spec_atk_button.set_size((300, 70))
+        wait_button.set_size((300, 70))
+
+        control_box.set_topleft((0, 604))
+        control_box.set_size((1440, 420))
+
+
+        self.elements = [fight_area, control_box]
+        self.init_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction, event_args={"id":thorpy.constants.EVENT_DDL})])
+        self.start_window()
+
+
+
+    def execute_fight_command(self, pteam, eteam, command, level_id):
+        pass
 a = Game()
