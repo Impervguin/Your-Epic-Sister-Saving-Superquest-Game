@@ -1,8 +1,12 @@
+import random
+import pymorphy2
 import thorpy
 import Classes
 import pygame
 import sqlite3
 import splitter
+
+MORPH = pymorphy2.MorphAnalyzer()
 
 
 class Game:
@@ -442,17 +446,18 @@ class Game:
         self.init_window()
         self.start_window()
 
-
     def init_fight(self, level_id):
         player_team = [Classes.FightMember(char) for char in self.selected_heroes]
-        leveldb = sqlite3.connect("levels.db")
-        lcur = leveldb.cursor()
+        self.leveldb = sqlite3.connect("levels.db")
+        lcur = self.leveldb.cursor()
         level = lcur.execute(f"SELECT * FROM levels WHERE id='{level_id}'").fetchone()
         enemy_team = []
         for i in range(1, 6, 2):
-            if level[i] !=0:
+            if level[i] != 0:
                 enemy = dict()
-                param_names = ("id", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier", "accuracy", "dodge", "attack_type")
+                param_names = (
+                "id", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier",
+                "accuracy", "dodge", "attack_type", "xp_per_level")
                 params = self.obj_cur.execute(f"SELECT * FROM enemies WHERE id = '{level[i]}'").fetchone()
                 for j in range(len(param_names)):
                     enemy[param_names[j]] = params[j]
@@ -462,12 +467,13 @@ class Game:
                 enemy_team.append(Classes.FightMember(None))
         self.fight_screen(player_team, enemy_team, level_id)
 
-
-
     def fight_screen(self, pteam, eteam, level_id):
+
         def ddl_reaction(event):
             char = event.value
             if any([ch in char for ch in [i.name for i in self.heroes.values()]]):
+                global SEL_CHAR
+                SEL_CHAR = int(event.value[1]) - 1
                 char = pteam[int(event.value[1]) - 1].character
                 hero_name.set_text("Имя: " + char.name)
                 hero_atk_type.set_text("Тип атаки: " + char.attack_type)
@@ -478,6 +484,8 @@ class Game:
                 hero_box.center(axis=(True, False))
 
             else:
+                global SEL_ENEMY
+                SEL_ENEMY = int(event.value[1]) - 1
                 char = eteam[int(event.value[1]) - 1].character
                 enemy_name.set_text("Имя: " + char.name)
                 enemy_atk_type.set_text("Тип атаки: " + char.attack_type)
@@ -488,28 +496,35 @@ class Game:
                 enemy_box.center(axis=(True, False))
             self.menu.blit_and_update()
 
-
-
         heroes = []
         if not pteam[0].defeated:
-            hero1 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
+            hero1 = thorpy.Image(
+                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[0].character.id}/char.png").convert_alpha(),
+                                       (100, 200)))
             heroes.append(hero1)
         if not pteam[1].defeated:
-            hero2 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
+            hero2 = thorpy.Image(
+                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[1].character.id}/char.png").convert_alpha(),
+                                       (100, 200)))
             heroes.append(hero2)
         if not pteam[2].defeated:
-            hero3 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/{pteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
+            hero3 = thorpy.Image(
+                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[2].character.id}/char.png").convert_alpha(),
+                                       (100, 200)))
             heroes.append(hero3)
 
         enemies = []
         if not eteam[0].defeated:
-            e1 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
+            e1 = thorpy.Image(pygame.transform.scale(
+                pygame.image.load(f"sprites/enemies/{eteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
             enemies.append(e1)
         if not eteam[1].defeated:
-            e2 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
+            e2 = thorpy.Image(pygame.transform.scale(
+                pygame.image.load(f"sprites/enemies/{eteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
             enemies.append(e2)
         if not eteam[2].defeated:
-            e3 = thorpy.Image(pygame.transform.scale(pygame.image.load(f"sprites/enemies/{eteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
+            e3 = thorpy.Image(pygame.transform.scale(
+                pygame.image.load(f"sprites/enemies/{eteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
             enemies.append(e3)
 
         fight_area = thorpy.Box(heroes + enemies)
@@ -537,10 +552,12 @@ class Game:
             e3.set_size((100, 200))
             e3.set_topleft((70, 350))
 
-        selected_hero = None
-        selected_enemy = None
-        hero_chooser = thorpy.DropDownListLauncher(titles=[f"({i + 1})" + pteam[i].character.name for i in range(len(pteam)) if not pteam[i].defeated and not pteam[i].made_move], const_text="Hero:")
-        enemy_chooser = thorpy.DropDownListLauncher(titles=[f"({i + 1})" + eteam[i].character.name for i in range(len(eteam)) if not eteam[i].defeated], const_text="Enemy:")
+        hero_chooser = thorpy.DropDownListLauncher(
+            titles=[f"({i + 1})" + pteam[i].character.name for i in range(len(pteam)) if
+                    not pteam[i].defeated and not pteam[i].made_move], const_text="Hero:")
+        enemy_chooser = thorpy.DropDownListLauncher(
+            titles=[f"({i + 1})" + eteam[i].character.name for i in range(len(eteam)) if not eteam[i].defeated],
+            const_text="Enemy:")
         hero_name = thorpy.make_text("Имя:")
         hero_hp = thorpy.make_text("Хп:")
         hero_atk_type = thorpy.make_text("Тип атаки:")
@@ -555,12 +572,57 @@ class Game:
         enemy_phys_def = thorpy.make_text("Физ защита:")
         enemy_box = thorpy.Box([enemy_name, enemy_hp, enemy_atk_type, enemy_phys_def, enemy_mag_def])
 
-        atk_button = thorpy.make_button("Атаковать")
-        spec_atk_button = thorpy.make_button("Спец атака")
-        wait_button = thorpy.make_button("Ждать")
+        def atk_button_handler():
+            if "SEL_ENEMY" not in globals():
+                global SEL_ENEMY
+                SEL_ENEMY = None
 
+            if "SEL_CHAR" not in globals():
+                global SEL_CHAR
+                SEL_CHAR = None
 
-        control_box = thorpy.Box([hero_chooser, enemy_chooser, hero_box, enemy_box, atk_button, spec_atk_button, wait_button])
+            if SEL_CHAR is not None and SEL_ENEMY is not None:
+                command = ("attack", SEL_CHAR, SEL_ENEMY)
+                self.execute_fight_command(pteam, eteam, command, level_id)
+            else:
+                thorpy.launch_nonblocking_choices("Выберете героя и противника", [("ОК", None)])
+
+        def spec_atk_button_handler():
+            if "SEL_ENEMY" not in globals():
+                global SEL_ENEMY
+                SEL_ENEMY = None
+
+            if "SEL_CHAR" not in globals():
+                global SEL_CHAR
+                SEL_CHAR = None
+
+            if SEL_CHAR is not None and SEL_ENEMY is not None:
+                command = ("specattack", SEL_CHAR, SEL_ENEMY)
+                if pteam[SEL_CHAR].turns_before_spec_attack > 0:
+                    thorpy.launch_nonblocking_choices(
+                        f"Перезарядка спецатаки.\n Осталось ходов:{pteam[SEL_CHAR].turns_before_spec_attack}",
+                        [("ОК", None)])
+                else:
+                    self.execute_fight_command(pteam, eteam, command, level_id)
+            else:
+                thorpy.launch_nonblocking_choices("Выберете героя и противника", [("ОК", None)])
+
+        def wait_button_handler():
+            if "SEL_CHAR" not in globals():
+                global SEL_CHAR
+                SEL_CHAR = None
+            if SEL_CHAR is not None:
+                command = ("wait", SEL_CHAR)
+                self.execute_fight_command(pteam, eteam, command, level_id)
+            else:
+                thorpy.launch_nonblocking_choices("Выберете героя", [("ОК", None)])
+
+        atk_button = thorpy.make_button("Атаковать", func=atk_button_handler)
+        spec_atk_button = thorpy.make_button("Спец атака", func=spec_atk_button_handler)
+        wait_button = thorpy.make_button("Ждать", func=wait_button_handler)
+
+        control_box = thorpy.Box(
+            [hero_chooser, enemy_chooser, hero_box, enemy_box, atk_button, spec_atk_button, wait_button])
         hero_box.set_topleft((0, 75))
         hero_box.fit_children()
         hero_box.center(axis=(True, False))
@@ -583,13 +645,132 @@ class Game:
         control_box.set_topleft((0, 604))
         control_box.set_size((1440, 420))
 
-
         self.elements = [fight_area, control_box]
-        self.init_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction, event_args={"id":thorpy.constants.EVENT_DDL})])
+        self.init_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction,
+                                               event_args={"id": thorpy.constants.EVENT_DDL})])
         self.start_window()
 
-
-
     def execute_fight_command(self, pteam, eteam, command, level_id):
+        if command[0] == "attack":
+            hero = pteam[command[1]]
+            enemy = eteam[command[2]]
+            damage = hero.character.attack(enemy.character)
+            enemy.character.stats["hp"] -= damage
+            if enemy.character.stats["hp"] <= 0:
+                enemy.defeated = True
+            hero.made_move = True
+        elif command[0] == "specattack":
+            hero = pteam[command[1]]
+            enemy = eteam[command[2]]
+            damage = hero.character.specattack(enemy.character)
+            enemy.character.stats["hp"] -= damage
+            if enemy.character.stats["hp"] <= 0:
+                enemy.defeated = True
+            hero.made_move = True
+            hero.turns_before_spec_attack = hero.character.spec_attack_recovery
+        elif command[0] == "wait":
+            hero = pteam[command[1]]
+            hero.made_move = True
+        global SEL_CHAR, SEL_ENEMY
+        SEL_CHAR = None
+        SEL_ENEMY = None
+        if all([e.defeated for e in eteam]):
+            self.end_level_screen(pteam,eteam, level_id)
+            return 0
+        if all([p.made_move for p in pteam]):
+            self.enemy_team_move(eteam, pteam, level_id)
+            for p in pteam:
+                if not p.defeated:
+                    p.made_move = False
+                    p.turns_before_spec_attack -= 1
+        if all([p.defeated for p in pteam]):
+            self.defeated_screen()
+            return 0
+
+        self.fight_screen(pteam, eteam, level_id)
+
+    def enemy_team_move(self, eteam, pteam, level_id):
+        for e in eteam:
+            if all([p.defeated for p in pteam]):
+                break
+            if not e.defeated:
+                p = random.choice(pteam)
+                while p.defeated:
+                    p = random.choice(pteam)
+                damage = e.character.attack(p.character)
+                p.character.stats["hp"] -= damage
+                if p.character.stats["hp"] <= 0:
+                    p.defeated = True
+
+    def end_level_screen(self, pteam, eteam, level_id):
+        title = thorpy.make_text("Вы победили!", font_size=120)
+
+        xp = 0
+        for e in eteam:
+            if e.character is not None:
+                xp += e.character.xp_per_level * e.character.lvl
+        xp = xp * 3 // len(tuple(filter(lambda x: x.character is not None, pteam)))
+        texts = []
+        for p in pteam:
+            if p.character is not None:
+                p.character.xp += xp
+                l = 0
+                while p.character.level_up():
+                    l += 1
+                texts.append(thorpy.make_text(f"Персонаж {p.character.name.capitalize()} получает {xp} XP!"))
+                if l > 0:
+                    lvl_word = MORPH.parse("уровень")[0]
+                    texts.append(thorpy.make_text(f"Персонаж {p.character.name.capitalize()} Поднимает {l} {lvl_word.make_agree_with_number(l).word}!"))
+
+        lcur = self.leveldb.cursor()
+        if not self.levels[level_id]:
+            item_id = lcur.execute(f"SELECT firstbonusitem FROM levels WHERE id='{level_id}'").fetchone()[0]
+            if item_id != 0:
+                print(item_id)
+                item_name = self.obj_cur.execute(f"SELECT name FROM items WHERE id='{item_id}'").fetchone()[0]
+                print(item_name)
+                texts.append(thorpy.make_text(f"Бонус первого прохождения {item_name.capitalize()} добавлен в инвентарь"))
+                item_char = (
+                    "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
+                    "crit_modifier",
+                    "accuracy", "dodge")
+                item = self.obj_cur.execute(f"SELECT * FROM items WHERE id='{item_id}'").fetchone()
+                d = {}
+                for i in range(len(item_char)):
+                    d[item_char[i]] = item[i]
+
+                self.inventory.append(Classes.Armor(d) if d["type"] == "armor" else Classes.Weapon(d))
+
+            char_id = lcur.execute(f"SELECT characteropen FROM levels WHERE id='{level_id}'").fetchone()[0]
+            if char_id != 0:
+                self.heroes[char_id].available = True
+                texts.append(thorpy.make_text(f"Вы разблокировали персонажа {self.heroes[char_id].name.capitalize()}"))
+        self.levels[level_id] = True
+
+
+        results_box = thorpy.Box(texts)
+
+        for t in texts:
+            t.set_font_size(25)
+
+        store = thorpy.store(results_box, texts, align="left", margin=5)
+        results_box.fit_children()
+        results_box.center()
+
+        title.set_topleft((0, 100))
+        title.center(axis=(True, False))
+
+        return_but = thorpy.make_button("Вернуться в меню", func=self.level_selector)
+        return_but.set_size((200, 200))
+        return_but.set_topleft((100, 724))
+
+        self.elements = [return_but, results_box, title]
+
+        self.init_window()
+        self.start_window()
+
+    def defeated_screen(self):
         pass
+
+
 a = Game()

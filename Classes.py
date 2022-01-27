@@ -1,7 +1,12 @@
 import random
 import sqlite3
 
-XP_TABLE = {1: 500, 2: 1000}  # Таблица требуемоего опыта для перехода новый уровень. заполнить позже
+XP_TABLE = {1: 500, 2: 1000, 3: 1500, 4: 2000, 5: 2500, 6: 3000, 7: 3500, 8: 4000, 9: 4500, 10: 5000, 11: 5500,
+            12: 6000, 13: 6500, 14: 7000, 15: 7500, 16: 8000, 17: 8500, 18: 9000, 19: 9500, 20: 10000, 21: 10000,
+            22: 10000, 23: 10000, 24: 10000, 25: 10000, 26: 10000, 27: 10000, 28: 10000, 29: 10000, 30: 10000,
+            31: 10000, 32: 10000, 33: 10000, 34: 10000, 35: 10000, 36: 10000, 37: 10000, 38: 10000, 39: 10000,
+            40: 10000, 41: 10000, 42: 10000, 43: 10000, 44: 10000, 45: 10000, 46: 10000, 47: 10000, 48: 10000,
+            49: 10000}
 OBJ = sqlite3.connect("BaseObjects.db")
 OBJ_CUR = OBJ.cursor()
 
@@ -99,10 +104,14 @@ class BaseCharacter:
         #     self.calculate_characteristics()
 
     def level_up(self):
+        if self.lvl == 50:
+            return False
         if self.xp >= XP_TABLE[self.lvl]:
             self.xp -= XP_TABLE[self.lvl]
             self.lvl += 1
             self.calculate_characteristics()
+            return True
+        return False
 
     def attack(self, target) -> int:
         types = {"phys": (1, 0),
@@ -148,7 +157,6 @@ class BaseCharacter:
 
         total_damage = int(mag_damage + phys_damage)
 
-        target.stats["hp"] -= total_damage
         return total_damage
 
 
@@ -173,6 +181,8 @@ class BaseEnemy:
         self.base_stats["crit_modifier"] = characteristics["crit_modifier"]
         self.base_stats["accuracy"] = characteristics["accuracy"]
         self.base_stats["dodge"] = characteristics["dodge"]
+
+        self.xp_per_level = characteristics["xp_per_level"]
 
         self.calculate_characteristics()
 
@@ -205,7 +215,6 @@ class BaseEnemy:
         self.stats = dict()
         for stat in self.base_stats.keys():
             self.stats[stat] = self.base_stats[stat] * int(1 + self.lvl / 25)
-
 
 
 class EquipItem:
@@ -243,7 +252,6 @@ class FightMember:
             self.made_move = False
             self.turns_before_spec_attack = 0
             self.character.stats["hp"] = self.character.stats["max_hp"]
-
 
 # class Fight:
 #     def __init__(self, command1: (list, tuple), command2: (list, tuple)):
