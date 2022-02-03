@@ -18,29 +18,41 @@ class Game:
         self.obj = sqlite3.connect(f"BaseObjects.db")
         self.obj_cur = self.obj.cursor()
         self.background = thorpy.Background(elements=self.elements)
-        self.menu = thorpy.Menu(self.background)
+
         self.params = {'lvl': None, 'chr': None}
-        self.inventory = []
 
         self.start_menu_window()
 
-    def init_window(self, reac=[]):
-        self.background = thorpy.Background(elements=self.elements)
-        for r in reac:
-            self.background.add_reaction(r)
+    def init_window(self):
         self.menu = thorpy.Menu(self.background)
+        self.menu.play()
+
 
     def clear_window(self):
+
+
         self.elements = []
-        self.init_window()
+        # self.init_window()
 
     def close_window(self):
         self.application.quit()
 
-    def start_window(self):
-        self.menu.play()
+    def start_window(self, reac=[]):
+        # print(1)
+        self.menu.remove_from_population(self.background)
+        self.background = thorpy.Background(elements=self.elements)
+        for r in reac:
+            self.background.add_reaction(r)
+        self.menu.rebuild(self.background)
+        self.menu.blit_and_update()
+        # self.background.remove_all_elements()
+        # self.background.add_elements(self.elements)
+        #
+        # self.background.unblit_and_reblit()
+
 
     def start_menu_window(self):
+
         def new_game_button_handler():
             self.clear_window()
             self.new_game()
@@ -58,10 +70,11 @@ class Game:
         load_game_button = thorpy.make_button("Загрузить игру", func=load_game_button_handler)
         load_game_button.set_size((425, 125))
         load_game_button.set_topleft((507, 559))
-
+        self.clear_window()
         self.elements = [new_game_button, load_game_button]
+
+        self.background.add_elements(self.elements)
         self.init_window()
-        self.start_window()
 
     def open_save(self):
         save_path = "saves/save.db"
@@ -111,6 +124,7 @@ class Game:
             "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
             "crit_modifier",
             "accuracy", "dodge")
+        self.inventory = []
         for obj in inv:
             d = dict()
             for j in range(len(item_char)):
@@ -132,7 +146,7 @@ class Game:
 
     def disclaimer_window(self):
         def press():
-            self.clear_window()
+            # self.clear_window()
             self.level_selector()
 
         disclaimer_image_path = "sprites/disclaimers/disclaimer.png"
@@ -143,7 +157,6 @@ class Game:
         disclaimer.set_image(img=pygame.image.load(disclaimer_image_path), state=thorpy.constants.STATE_NORMAL)
 
         self.elements = [disclaimer]
-        self.init_window()
         self.start_window()
 
     def character_view(self, id):
@@ -295,7 +308,7 @@ class Game:
         go_back_button.set_size((400, 120))
 
         self.elements = [im, char_box, inventory_box, go_back_button]
-        self.init_window()
+
         self.start_window()
 
     def character_selector(self, id):
@@ -374,7 +387,7 @@ class Game:
         proceed_button.set_size((400, 120))
 
         self.elements = [char_box, title, go_back_button, proceed_button, reset] + selected_char
-        self.init_window()
+
         self.start_window()
 
     def level_selector(self):
@@ -443,10 +456,11 @@ class Game:
         Characters_Box.set_topleft((1000, 0))
 
         self.elements = [Characters_Box, Levels_Box]
-        self.init_window()
+
         self.start_window()
 
     def init_fight(self, level_id):
+        print(1)
         player_team = [Classes.FightMember(char) for char in self.selected_heroes]
         self.leveldb = sqlite3.connect("levels.db")
         lcur = self.leveldb.cursor()
@@ -646,9 +660,8 @@ class Game:
         control_box.set_size((1440, 420))
 
         self.elements = [fight_area, control_box]
-        self.init_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction,
+        self.start_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction,
                                                event_args={"id": thorpy.constants.EVENT_DDL})])
-        self.start_window()
 
     def execute_fight_command(self, pteam, eteam, command, level_id):
         if command[0] == "attack":
@@ -766,7 +779,7 @@ class Game:
 
         self.elements = [return_but, results_box, title]
 
-        self.init_window()
+
         self.start_window()
 
     def defeated_screen(self):
