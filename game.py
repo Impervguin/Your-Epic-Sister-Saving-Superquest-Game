@@ -509,36 +509,33 @@ class Game:
                 enemy_box.fit_children()
                 enemy_box.center(axis=(True, False))
             self.menu.blit_and_update()
-
+        def alpha_img(path):
+            im = pygame.image.load(path)
+            im.set_colorkey(im.get_at((0, 0)))
+            x, y = im.get_size()
+            sootn = x / y
+            im = pygame.transform.scale(im, (int(200 * sootn), 200))
+            return im
         heroes = []
         if not pteam[0].defeated:
-            hero1 = thorpy.Image(
-                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[0].character.id}/char.png").convert_alpha(),
-                                       (100, 200)))
+            hero1 = thorpy.Image(alpha_img(f"sprites/{pteam[0].character.id}/char.png"))
             heroes.append(hero1)
         if not pteam[1].defeated:
-            hero2 = thorpy.Image(
-                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[1].character.id}/char.png").convert_alpha(),
-                                       (100, 200)))
+            hero2 = thorpy.Image(alpha_img(f"sprites/{pteam[1].character.id}/char.png"))
             heroes.append(hero2)
         if not pteam[2].defeated:
-            hero3 = thorpy.Image(
-                pygame.transform.scale(pygame.image.load(f"sprites/{pteam[2].character.id}/char.png").convert_alpha(),
-                                       (100, 200)))
+            hero3 = thorpy.Image(alpha_img(f"sprites/{pteam[2].character.id}/char.png"))
             heroes.append(hero3)
 
         enemies = []
         if not eteam[0].defeated:
-            e1 = thorpy.Image(pygame.transform.scale(
-                pygame.image.load(f"sprites/enemies/{eteam[0].character.id}/char.png").convert_alpha(), (100, 200)))
+            e1 = thorpy.Image(alpha_img(f"sprites/enemies/{eteam[0].character.id}/char.png"))
             enemies.append(e1)
         if not eteam[1].defeated:
-            e2 = thorpy.Image(pygame.transform.scale(
-                pygame.image.load(f"sprites/enemies/{eteam[1].character.id}/char.png").convert_alpha(), (100, 200)))
+            e2 = thorpy.Image(alpha_img(f"sprites/enemies/{eteam[1].character.id}/char.png"))
             enemies.append(e2)
         if not eteam[2].defeated:
-            e3 = thorpy.Image(pygame.transform.scale(
-                pygame.image.load(f"sprites/enemies/{eteam[2].character.id}/char.png").convert_alpha(), (100, 200)))
+            e3 = thorpy.Image(alpha_img(f"sprites/enemies/{eteam[2].character.id}/char.png"))
             enemies.append(e3)
 
         fight_area = thorpy.Box(heroes + enemies)
@@ -547,23 +544,23 @@ class Game:
         fight_area.set_image(pygame.image.load("sprites/background1.png"))
 
         if not pteam[0].defeated:
-            hero1.set_size((100, 200))
+            # hero1.set_size((100, 200))
             hero1.set_topleft((1230, 100))
         if not pteam[1].defeated:
-            hero2.set_size((100, 200))
+            # hero2.set_size((100, 200))
             hero2.set_topleft((1050, 190))
         if not pteam[2].defeated:
-            hero3.set_size((100, 200))
+            # hero3.set_size((100, 200))
             hero3.set_topleft((1270, 350))
 
         if not eteam[0].defeated:
-            e1.set_size((100, 200))
+            # e1.set_size((100, 200))
             e1.set_topleft((110, 100))
         if not eteam[1].defeated:
-            e2.set_size((100, 200))
+            # e2.set_size((100, 200))
             e2.set_topleft((290, 190))
         if not eteam[2].defeated:
-            e3.set_size((100, 200))
+            # e3.set_size((100, 200))
             e3.set_topleft((70, 350))
 
         hero_chooser = thorpy.DropDownListLauncher(
