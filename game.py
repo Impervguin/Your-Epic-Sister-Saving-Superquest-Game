@@ -27,9 +27,7 @@ class Game:
         self.menu = thorpy.Menu(self.background)
         self.menu.play()
 
-
     def clear_window(self):
-
 
         self.elements = []
         # self.init_window()
@@ -49,7 +47,6 @@ class Game:
         # self.background.add_elements(self.elements)
         #
         # self.background.unblit_and_reblit()
-
 
     def start_menu_window(self):
 
@@ -460,7 +457,7 @@ class Game:
         self.start_window()
 
     def init_fight(self, level_id):
-        print(1)
+        self.fight_log = ["Начало боя"]
         player_team = [Classes.FightMember(char) for char in self.selected_heroes]
         self.leveldb = sqlite3.connect("levels.db")
         lcur = self.leveldb.cursor()
@@ -470,8 +467,9 @@ class Game:
             if level[i] != 0:
                 enemy = dict()
                 param_names = (
-                "id", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance", "crit_modifier",
-                "accuracy", "dodge", "attack_type", "xp_per_level")
+                    "id", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
+                    "crit_modifier",
+                    "accuracy", "dodge", "attack_type", "xp_per_level")
                 params = self.obj_cur.execute(f"SELECT * FROM enemies WHERE id = '{level[i]}'").fetchone()
                 for j in range(len(param_names)):
                     enemy[param_names[j]] = params[j]
@@ -509,6 +507,7 @@ class Game:
                 enemy_box.fit_children()
                 enemy_box.center(axis=(True, False))
             self.menu.blit_and_update()
+
         def alpha_img(path):
             im = pygame.image.load(path)
             im.set_colorkey(im.get_at((0, 0)))
@@ -516,6 +515,7 @@ class Game:
             sootn = x / y
             im = pygame.transform.scale(im, (int(200 * sootn), 200))
             return im
+
         heroes = []
         if not pteam[0].defeated:
             hero1 = thorpy.Image(alpha_img(f"sprites/{pteam[0].character.id}/char.png"))
@@ -632,8 +632,14 @@ class Game:
         spec_atk_button = thorpy.make_button("Спец атака", func=spec_atk_button_handler)
         wait_button = thorpy.make_button("Ждать", func=wait_button_handler)
 
+        log_texts = [thorpy.make_text(t, font_color=(255, 255, 255), font_size=18) for t in self.fight_log]
+
+        log_box = thorpy.Box(elements=log_texts)
+        log_box.add_lift()
+        log_box.set_main_color((0, 0, 0))
+
         control_box = thorpy.Box(
-            [hero_chooser, enemy_chooser, hero_box, enemy_box, atk_button, spec_atk_button, wait_button])
+            [hero_chooser, enemy_chooser, hero_box, enemy_box, atk_button, spec_atk_button, wait_button, log_box])
         hero_box.set_topleft((0, 75))
         hero_box.fit_children()
         hero_box.center(axis=(True, False))
@@ -653,12 +659,15 @@ class Game:
         spec_atk_button.set_size((300, 70))
         wait_button.set_size((300, 70))
 
+        log_box.set_topleft((40, 40))
+        log_box.set_size((500, 340))
+
         control_box.set_topleft((0, 604))
         control_box.set_size((1440, 420))
 
         self.elements = [fight_area, control_box]
         self.start_window(reac=[thorpy.Reaction(thorpy.constants.THORPY_EVENT, reac_func=ddl_reaction,
-                                               event_args={"id": thorpy.constants.EVENT_DDL})])
+                                                event_args={"id": thorpy.constants.EVENT_DDL})])
 
     def execute_fight_command(self, pteam, eteam, command, level_id):
         if command[0] == "attack":
@@ -666,26 +675,34 @@ class Game:
             enemy = eteam[command[2]]
             damage = hero.character.attack(enemy.character)
             enemy.character.stats["hp"] -= damage
+            self.fight_log.append(
+                f"Герой {hero.character.name.capitalize()} наносит удар. {enemy.character.name.capitalize()} теряет {damage} ХП.")
             if enemy.character.stats["hp"] <= 0:
                 enemy.defeated = True
+                self.fight_log.append(f"{enemy.character.name.capitalize()} погибает!")
             hero.made_move = True
         elif command[0] == "specattack":
             hero = pteam[command[1]]
             enemy = eteam[command[2]]
             damage = hero.character.specattack(enemy.character)
             enemy.character.stats["hp"] -= damage
+            self.fight_log.append(
+                f"Герой {hero.character.name.capitalize()} использует спецатаку. {enemy.character.name.capitalize()} теряет {damage} ХП.")
             if enemy.character.stats["hp"] <= 0:
                 enemy.defeated = True
+                self.fight_log.append(f"{enemy.character.name.capitalize()} погибает!")
             hero.made_move = True
             hero.turns_before_spec_attack = hero.character.spec_attack_recovery
         elif command[0] == "wait":
             hero = pteam[command[1]]
             hero.made_move = True
+            self.fight_log.append(
+                f"Герой {hero.character.name.capitalize()} решает подождать.")
         global SEL_CHAR, SEL_ENEMY
         SEL_CHAR = None
         SEL_ENEMY = None
         if all([e.defeated for e in eteam]):
-            self.end_level_screen(pteam,eteam, level_id)
+            self.end_level_screen(pteam, eteam, level_id)
             return 0
         if all([p.made_move for p in pteam]):
             self.enemy_team_move(eteam, pteam, level_id)
@@ -709,8 +726,11 @@ class Game:
                     p = random.choice(pteam)
                 damage = e.character.attack(p.character)
                 p.character.stats["hp"] -= damage
+                self.fight_log.append(
+                    f"{e.character.name} наносит удар. {p.character.name} теряет {damage} ХП.")
                 if p.character.stats["hp"] <= 0:
                     p.defeated = True
+                    self.fight_log.append(f"{p.character.name} погибает!")
 
     def end_level_screen(self, pteam, eteam, level_id):
         title = thorpy.make_text("Вы победили!", font_size=120)
@@ -730,7 +750,8 @@ class Game:
                 texts.append(thorpy.make_text(f"Персонаж {p.character.name.capitalize()} получает {xp} XP!"))
                 if l > 0:
                     lvl_word = MORPH.parse("уровень")[0]
-                    texts.append(thorpy.make_text(f"Персонаж {p.character.name.capitalize()} Поднимает {l} {lvl_word.make_agree_with_number(l).word}!"))
+                    texts.append(thorpy.make_text(
+                        f"Персонаж {p.character.name.capitalize()} Поднимает {l} {lvl_word.make_agree_with_number(l).word}!"))
 
         lcur = self.leveldb.cursor()
         if not self.levels[level_id]:
@@ -739,7 +760,8 @@ class Game:
                 print(item_id)
                 item_name = self.obj_cur.execute(f"SELECT name FROM items WHERE id='{item_id}'").fetchone()[0]
                 print(item_name)
-                texts.append(thorpy.make_text(f"Бонус первого прохождения {item_name.capitalize()} добавлен в инвентарь"))
+                texts.append(
+                    thorpy.make_text(f"Бонус первого прохождения {item_name.capitalize()} добавлен в инвентарь"))
                 item_char = (
                     "id", "type", "name", "max_hp", "phys_atk", "mag_atk", "phys_def", "mag_def", "crit_chance",
                     "crit_modifier",
@@ -756,7 +778,6 @@ class Game:
                 self.heroes[char_id].available = True
                 texts.append(thorpy.make_text(f"Вы разблокировали персонажа {self.heroes[char_id].name.capitalize()}"))
         self.levels[level_id] = True
-
 
         results_box = thorpy.Box(texts)
 
@@ -776,11 +797,23 @@ class Game:
 
         self.elements = [return_but, results_box, title]
 
-
         self.start_window()
 
     def defeated_screen(self):
-        pass
+        def press():
+            # self.clear_window()
+            self.level_selector()
+
+        disclaimer = thorpy.make_button("Поражение", func=press)
+        disclaimer.set_main_color((0, 0, 0))
+        disclaimer.set_font_size(50)
+        disclaimer.set_font_color((200, 0, 0))
+        disclaimer.set_size(self.window_size)
+        disclaimer.set_topleft((0, 0))
+        disclaimer.remove_all_hovered_states()
+
+        self.elements = [disclaimer]
+        self.start_window()
 
 
 a = Game()
