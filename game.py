@@ -635,7 +635,7 @@ class Game:
         log_texts = [thorpy.make_text(t, font_color=(255, 255, 255), font_size=18) for t in self.fight_log]
 
         log_box = thorpy.Box(elements=log_texts)
-        log_box.add_lift()
+        #log_box.add_lift()
         log_box.set_main_color((0, 0, 0))
 
         control_box = thorpy.Box(
